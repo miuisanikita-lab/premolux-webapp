@@ -3310,6 +3310,36 @@ const AppSheet = () => {
   const [prog,sProg]   = useState(0);
   const raf = useRef(null);
 
+  // ── SMS Relay qurilma tokenini ro'yxatdan o'tkazish ──
+  // MUHIM: bu QISM ILGARI UMUMAN YO'Q edi — shuning uchun Android
+  // ilova SMS yuborsa ham, backend uni "noma'lum qurilma" deb
+  // doim rad etardi. Endi operator Android ilovadagi tokenni
+  // shu yerga kiritib, o'z hisobiga bog'laydi.
+  const [token,sToken] = useState("");
+  const [relayStatus,sRelayStatus] = useState(null); // null=yuklanmoqda, {connected:bool,...}
+  const [registering,sRegistering] = useState(false);
+
+  useEffect(()=>{
+    api.get("/relay/status").then(sRelayStatus).catch(()=>sRelayStatus({connected:false}));
+  },[]);
+
+  const registerToken = async () => {
+    if (!token.trim()) { toast({kind:"err",title:"Token kiriting"}); return; }
+    sRegistering(true);
+    try {
+      await api.post("/relay/register", { token: token.trim() });
+      hap.ok();
+      toast({kind:"ok",title:"Qurilma bog'landi!"});
+      sRelayStatus({connected:true});
+      sToken("");
+    } catch (e) {
+      hap.err();
+      toast({kind:"err",title:"Bog'lanmadi",note:e.message});
+    } finally {
+      sRegistering(false);
+    }
+  };
+
   const start = () => {
     if (phase!=="idle" && phase!=="done") return;
     hap.press();
@@ -3395,7 +3425,8 @@ const AppSheet = () => {
             ["APK faylni oching","Yuklab olingan faylga bosing"],
             ["Noma'lum manbadan o'rnatishga ruxsat bering","Bir martalik tizim so'rovi"],
             ["SMS ruxsatini tasdiqlang","Faqat bank xabarlarini o'qiydi"],
-            ["Tayyor","Ilova fonda ishlaydi, hech narsa ko'rsatmaydi"],
+            ["Katta tugmani UZOQ BOSING","Token ko'rinadi — nusxalang"],
+            ["Tokenni pastga joylashtiring","Qurilma hisobingizga bog'lanadi"],
           ].map(([t,d],i,arr)=>(
             <div key={i} style={{ display:"flex", gap:12, padding:"12px 14px",
               borderBottom: i<arr.length-1 ? `1px solid ${th.b1}` : "none" }}>
@@ -3409,6 +3440,38 @@ const AppSheet = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ── MUHIM QADAM: qurilma tokenini bog'lash ── */}
+        <div style={{ ...glass(th,0.05), borderRadius:16, padding:"16px 16px 18px", marginTop:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+            <span style={{ width:8, height:8, borderRadius:"50%",
+              background: relayStatus?.connected ? th.ok : th.err }}/>
+            <p style={{ fontSize:13, fontWeight:700 }}>
+              {relayStatus?.connected ? "Qurilma bog'langan ✓" : "Qurilma hali bog'lanmagan"}
+            </p>
+          </div>
+          {!relayStatus?.connected && (
+            <>
+              <p style={{ fontSize:11.5, color:th.t3, lineHeight:1.55, marginBottom:12 }}>
+                Android ilovada katta tugmani <b>UZOQ BOSING</b> — token ko'rinadi,
+                uni nusxalab shu yerga joylashtiring:
+              </p>
+              <div style={{ display:"flex", gap:8 }}>
+                <input value={token} onChange={e=>sToken(e.target.value)}
+                  placeholder="qurilma tokeni..."
+                  style={{ flex:1, padding:"10px 12px", borderRadius:10, fontSize:12.5,
+                    fontFamily:"'SF Mono',monospace", background:th.s1,
+                    border:`1px solid ${th.b1}`, color:th.t1 }}/>
+                <Btn onClick={registerToken} disabled={registering} sz="sm">
+                  {registering ? "..." : "Bog'lash"}
+                </Btn>
+              </div>
+            </>
+          )}
+          {relayStatus?.connected && relayStatus?.deviceModel && (
+            <p style={{ fontSize:11.5, color:th.t3 }}>{relayStatus.deviceModel}</p>
+          )}
         </div>
       </div>
 
@@ -5883,7 +5946,7 @@ const Onboarding = ({ codes, onJoin }) => {
 export default function App() {
   const [themeId, setThemeId] = useState("amoled");
   const [page, setPage] = useState("premium");
-  const [entered, setEntered] = useState(false);
+  const [entered, setEntered] = useState(true);   // PIN qulfi olib tashlandi — doim ochiq
   const [pin, setPin] = useState(null);
   const [ready, setReady] = useState(false);
   const [dir, setDir] = useState(0);              // sahifa yo'nalishi
@@ -6050,11 +6113,7 @@ export default function App() {
             setEntered(true);
           }}/>
       )}
-      {role && !entered && (
-        <PinGate saved={pin}
-          onSet={code=>setPin(code)}
-          onOpen={()=>setEntered(true)}/>
-      )}
+      {/* PIN qulfi olib tashlandi — foydalanuvchi so'ragan */}
       <ToastHost list={toasts} onKill={killToast}/>
       <div className={cfg.calm ? "calm" : undefined} style={{ position:"relative", zIndex:1, minHeight:"100vh", paddingBottom:118 }}>
         <main className={entered ? "wake" : undefined} style={{ padding:"14px 18px 18px", maxWidth:720, margin:"0 auto" }}>
