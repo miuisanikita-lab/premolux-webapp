@@ -81,6 +81,94 @@ const themes = {
 const CHANNEL = "@PremoLux";
 
 // ═════════════════════════════════════════
+// OCHILISH EKRANI (Splash)
+// ═════════════════════════════════════════
+// Avval bu yerda faqat pulsatsiya qiladigan QULF belgisi bor edi va u
+// server javob berguncha (ba'zan 25 soniyaga qadar) ushlab turilardi —
+// foydalanuvchi nima bo'layotganini bilmasdi. Endi:
+//   • brend belgisi + ilova nomi + progress chizig'i
+//   • eng ko'pi bilan 2.6 soniyada o'z-o'zidan o'tadi
+const SPLASH_MIN = 1800;   // animatsiya kamida shuncha ko'rinib tursin
+const SPLASH_FADE = 420;   // puflab o'chish davomiyligi
+
+const Splash = ({ theme, done }) => {
+  const raf = useRef(0);
+  const [pct, setPct] = useState(0);
+  const [out, setOut] = useState(false);
+
+  useEffect(()=>{
+    const t0 = performance.now();
+    const paint = now => {
+      const p = Math.min(1, (now - t0) / SPLASH_MIN);
+      setPct(p);
+      raf.current = requestAnimationFrame(paint);
+    };
+    raf.current = requestAnimationFrame(paint);
+    return ()=>cancelAnimationFrame(raf.current);
+  }, []);
+
+  useEffect(()=>{
+    if (!done) return;
+    const t = setTimeout(()=>setOut(true), SPLASH_FADE);
+    return ()=>clearTimeout(t);
+  }, [done]);
+
+  return (
+    <ThemeCtx.Provider value={theme}>
+      <Css theme={theme}/>
+      <div style={{
+        position:"fixed", inset:0, display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center", gap:18,
+        background:theme.bgCss, overflow:"hidden",
+        opacity: out ? 0 : 1,
+        transform: out ? "scale(1.03)" : "scale(1)",
+        transition:`opacity ${SPLASH_FADE}ms ease, transform ${SPLASH_FADE}ms ease`,
+      }}>
+        {/* yumshoq yorug'lik dog'i */}
+        <span style={{
+          position:"absolute", width:280, height:280, borderRadius:"50%",
+          background:`radial-gradient(circle, ${theme.acc}26 0%, transparent 70%)`,
+          filter:"blur(18px)", animation:"splashGlow 2.6s ease-in-out infinite",
+        }}/>
+
+        {/* belgi */}
+        <span className="splashMark" style={{
+          position:"relative", width:76, height:76, borderRadius:24,
+          background:`linear-gradient(150deg, ${theme.acc}2e, ${theme.acc}12)`,
+          border:`1px solid ${theme.accBd}`,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          boxShadow:`0 10px 40px ${theme.accSub}`,
+        }}>
+          <Ic.Star s={32} c={theme.acc}/>
+        </span>
+
+        {/* nom */}
+        <div style={{ position:"relative", textAlign:"center" }}>
+          <p style={{ fontSize:20, fontWeight:800, letterSpacing:"-0.03em", color:theme.t1 }}>
+            PremoLux
+          </p>
+          <p className="splashTag" style={{ fontSize:11.5, color:theme.t4, marginTop:4, letterSpacing:"0.02em" }}>
+            {t("splash.tag")}
+          </p>
+        </div>
+
+        {/* progress */}
+        <span style={{
+          position:"relative", width:132, height:3, borderRadius:2,
+          background:theme.s2, overflow:"hidden",
+        }}>
+          <span style={{
+            display:"block", height:"100%", borderRadius:2,
+            width:`${(done ? 100 : pct*92).toFixed(1)}%`,
+            background:`linear-gradient(90deg, ${theme.acc}, ${theme.acc}80)`,
+          }}/>
+        </span>
+      </div>
+    </ThemeCtx.Provider>
+  );
+};
+
+// ═════════════════════════════════════════
 // XATOLAR EKRANI (Error Boundary)
 // ═════════════════════════════════════════
 // Oldin ilovada ErrorBoundary yo'q edi: bitta komponent ishdan chiqsa
@@ -298,6 +386,27 @@ const Css = ({ theme }) => {
     .linkBtn{ align-items:center; justify-content:center; gap:7px; cursor:pointer;
       font-family:inherit; font-weight:700; letter-spacing:-0.01em; }
     .linkBtn:active{ transform:scale(.985); }
+
+    /* ── ochilish ekrani ── */
+    @keyframes splashGlow{
+      0%,100%{ transform:scale(1);   opacity:.75 }
+      50%    { transform:scale(1.14); opacity:1   }
+    }
+    @keyframes splashPop{
+      0%  { transform:scale(.72) rotate(-8deg); opacity:0 }
+      55% { transform:scale(1.08) rotate(2deg);  opacity:1 }
+      100%{ transform:scale(1) rotate(0);       opacity:1 }
+    }
+    @keyframes splashRise{
+      0%  { transform:translateY(10px); opacity:0 }
+      100%{ transform:translateY(0);    opacity:1 }
+    }
+    @keyframes splashTag{
+      0%,100%{ opacity:.45 } 50%{ opacity:.9 }
+    }
+    .splashMark{ animation:splashPop .62s cubic-bezier(.2,1.3,.35,1) both }
+    .splashTag { animation:splashRise .5s .1s cubic-bezier(.2,.9,.3,1) both,
+                         splashTag 2.2s .6s ease-in-out infinite }
 
     /* ── klaviatura fokusi ──
        Oldin butun ilovada :focus-visible yo'q edi: klaviatura bilan
@@ -4374,10 +4483,13 @@ const bC={};
 const Ava=({bid,n=36})=>{
   const th = useTheme();
   const b  = gB(bid);
+  // 24 px va undan kichik belgilar uchun tarmoqqa chiqmaymiz
   const [u,sU]   = useState(bC[bid] || null);
   const [go,sGo] = useState(!!bC[bid]);   // yuklandi
+  const tiny = n <= 24;
 
   useEffect(()=>{
+    if (tiny) return;
     if (bC[bid]) { sU(bC[bid]); sGo(true); return; }
     let dead = false;
 
@@ -4408,9 +4520,19 @@ const Ava=({bid,n=36})=>{
     }
 
     return ()=>{ dead = true; };
-  },[bid]);
+  },[bid, tiny]);
 
   const r = n*0.22;
+
+  // ── kichik belgi: bank harflari (tez, tarmoqsiz, aniq) ──
+  if (tiny) return (
+    <span className="iconIn" title={b.name} style={{
+      width:n, height:n, borderRadius:r, flexShrink:0,
+      background:`${b.c}18`, border:`1px solid ${b.c}30`,
+      display:"flex", alignItems:"center", justifyContent:"center",
+      fontSize:n*.34, fontWeight:800, color:b.c,
+    }}>{b.name.slice(0,2).toUpperCase()}</span>
+  );
 
   // ── skelet ──
   if (!go) return (
@@ -5346,7 +5468,12 @@ const CardsPage=()=>{
                 <p style={{ fontWeight:600,fontSize:13,letterSpacing:"-0.01em" }}>{p.name}</p>
                 <p style={{ fontSize:11,color:th.t3,marginTop:2 }}>{tp("cards.rowNote", (p.cards||[]).length, { m: bks.length })}</p>
               </div>
-              <div style={{ display:"flex",marginRight:3 }}>{bks.slice(0,3).map((bk,i)=><div key={bk.bid} style={{ marginLeft:i?-5:0,zIndex:3-i }}><Ava bid={bk.bid} n={22}/></div>)}{bks.length>3&&<div style={{ width:22,height:22,borderRadius:6,marginLeft:-5,...glass(th,0.05),display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:th.t3,fontWeight:600 }}>+{bks.length-3}</div>}</div>
+              {/* bank logolari yonma-yon turadi (ustma-ust emas) —
+                  avval -5px bilan ustma-ust tushib, chalkash ko'rinardi */}
+              <div style={{ display:"flex",gap:4,marginRight:2,flexShrink:0 }}>
+                {bks.slice(0,2).map(bk=><Ava key={bk.bid} bid={bk.bid} n={20}/>)}
+                {bks.length>2&&<span style={{ width:20,height:20,borderRadius:6,...glass(th,0.05),display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:th.t3,fontWeight:600,flexShrink:0 }}>+{bks.length-2}</span>}
+              </div>
               <Ic.Right s={13} c={th.t3}/>
             </div></SwipeRow></div>
           );})}
@@ -6254,6 +6381,10 @@ export default function App() {
   const [entered, setEntered] = useState(true);   // PIN qulfi olib tashlandi — doim ochiq
   const [pin, setPin] = useState(null);
   const [ready, setReady] = useState(false);
+  // ochilish animatsiyasi — kamida SPLASH_MIN ko'rinib turadi.
+  // Aks holda ilova 1 kadrda ochilib, animatsiya ko'rinmasdi.
+  const [introDone, setIntroDone] = useState(false);
+  useEffect(()=>{ const t = setTimeout(()=>setIntroDone(true), SPLASH_MIN); return ()=>clearTimeout(t); }, []);
   const [dir, setDir] = useState(0);              // sahifa yo'nalishi
 
   // ── umumiy ma'lumot ──
@@ -6333,6 +6464,35 @@ export default function App() {
   // qanday brauzerda ishlaydigan localStorage ishlatiladi.
   useEffect(()=>{
     (async()=>{
+      // ── 1. MAHALLIY ma'lumotni SINXRON tiklash ──
+      // Bu kutishni talab qilmaydi, shuning uchun ilova darhol ochiladi.
+      try {
+        const raw0 = localStorage.getItem("premolux_v1");
+        const d0 = raw0 ? JSON.parse(raw0) : null;
+        if (d0) {
+          if (d0.account  !== undefined) setAccount(d0.account);
+          if (d0.bots)      setBots(d0.bots);
+          if (d0.people)    setPeople(d0.people);
+          if (d0.cfg)     { setCfg(c=>({ ...c, ...d0.cfg })); setHaptic(d0.cfg.haptic !== false); }
+          if (d0.role)      setRole(d0.role);
+          if (d0.partners)  setPartners(d0.partners);
+          if (d0.workers)   setWorkers(d0.workers);
+          if (d0.codes)     setCodes(d0.codes);
+          if (d0.hist?.length) setHist(d0.hist);
+          if (d0.themeId)   setThemeId(d0.themeId);
+          if (d0.lang && LANGS.some(x=>x.id===d0.lang)) { setLangGlobal(d0.lang); setLangState(d0.lang); }
+          if (d0.pin)       setPin(d0.pin);
+        }
+      } catch {}
+
+      // ── 2. Ilova darhol ochiladi ──
+      // AVVAL bu qator network so'rovidan KEYIN turardi — server sekin
+      // bo'lsa yoki javob bermasa, qulf ekrani 25 soniyaga qolardi
+      // (request timeout). Endi mahalliy ma'lumot tiklangan zahoti
+      // oynani ochamiz, server esa fon bilan tekshiriladi.
+      setReady(true);
+
+      // ── 3. FONDA server bilan sinxronlash ──
       try {
         await api.post("/auth/verify", {}).catch(e=>{
           if (bootWarned.current) return;
@@ -6346,6 +6506,7 @@ export default function App() {
               note:t("net.telegramOnlyNote"), ms:4200 }), 900);
           }
         });
+
         const raw = localStorage.getItem("premolux_v1");
         const d = raw ? JSON.parse(raw) : null;
         if (d) {
@@ -6363,11 +6524,6 @@ export default function App() {
           if (d.pin)       setPin(d.pin);
         }
       } catch {}
-      // MUHIM: ilova DARHOL ochilishi kerak — backend so'rovini
-      // (masalan Render "uyg'onish" vaqti tufayli sekin bo'lsa)
-      // KUTIB TURMAYDI. Shuning uchun setReady(true) BIRINCHI
-      // chaqiriladi, "/people" esa FONDA, alohida yuklanadi.
-      setReady(true);
 
       // Mahalliy (localStorage) ma'lumot ESKIRGAN bo'lishi mumkin
       // (masalan boshqa qurilmada qo'shilgan karta) — shuning uchun
@@ -6459,18 +6615,9 @@ export default function App() {
   };
   const theme = themes[themeId] || themes.amoled;
 
-  if (!ready) return (
-    <ThemeCtx.Provider value={theme}>
-      <Css theme={theme}/>
-      <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <span className="lockPulse" style={{ width:54, height:54, borderRadius:18,
-          background:theme.s2, border:`1px solid ${theme.b1}`,
-          display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <Ic.Lock s={22} c={theme.acc}/>
-        </span>
-      </div>
-    </ThemeCtx.Provider>
-  );
+  // ochilish ekrani: ma'lumat tayyor bo'lishi KUTILADI va kamida
+  // SPLASH_MIN ko'rinib turadi — keyin puflab o'chadi
+  if (!ready || !introDone) return <Splash theme={theme} done={ready && introDone}/>;
 
   return (
     <ThemeCtx.Provider value={theme}>

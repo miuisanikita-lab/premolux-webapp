@@ -550,6 +550,9 @@ const uz = {
   "set.nOkNote": "Premium muvaffaqiyatli bo'lganda",
   "set.nLimitNote": "Limit yoki muddat tugaganda",
   "set.nErrNote": "Xato yuz berganda",
+
+  // ── ochilish ekrani ──
+  "splash.tag":        "ochilish ekrani",
 };
 
 const ru = {
@@ -1068,6 +1071,9 @@ const ru = {
   "set.nOkNote": "При успешном получении premium",
   "set.nLimitNote": "Когда лимит или срок исчерпаны",
   "set.nErrNote": "При возникновении ошибки",
+
+  // ── ochilish ekrani ──
+  "splash.tag":        "загрузка",
 };
 
 const en = {
@@ -1586,6 +1592,9 @@ const en = {
   "set.nOkNote": "When premium is received successfully",
   "set.nLimitNote": "When a limit or expiry is reached",
   "set.nErrNote": "When something fails",
+
+  // ── ochilish ekrani ──
+  "splash.tag":        "loading",
 };
 
 export const DICT = { uz, ru, en };
