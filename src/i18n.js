@@ -392,8 +392,6 @@ const uz = {
   "set.pinResetNote":   "Keyingi ochilishda yangi kod so'raladi",
   "set.pinCleared":     "Kod tozalandi",
   "set.pinClearedNote": "Ilovani qayta oching",
-  "set.autolock":       "Avtoqulf",
-  "set.autolockNote":   "Fon rejimida shuncha turgach qulflanadi",
   "set.maskPan":        "Raqamni yashirish",
   "set.maskPanNote":    "Ishchilar faqat oxirgi 4 raqamni ko'radi",
   "set.devices":        "Kirgan qurilmalar",
@@ -529,6 +527,29 @@ const uz = {
   "pin.enter":        "Kodni kiriting",
   "pin.note":         "PremoLux panelini ochish uchun",
   "pin.wrong":        "Kod noto'g'ri",
+
+  // ── xatolar ekrani ──
+  "crash.title":       "Ilova ishdan chiqdi",
+  "crash.note":        "Kutilmagan xato yuz berdi. Ma'lumotlaringiz saqlangan. Qayta urinib ko'ring.",
+  "crash.retry":       "Qayta urinish",
+  "crash.reset":       "Sozlashlarni tiklash",
+  "crash.resetNote":   "Faqat o'zgaruvchilar tozalanadi — serverdagi kartalar va botlar o'chmaydi.",
+  "crash.details":     "Texnik ma'lumot",
+
+  "set.dailyTime": "Hisobot vaqti",
+  "set.dailyNote": "Ilova ochiq bo'lgan paytda, belgilangan soatda xabar beriladi.",
+  "set.dailyFired": "Kunlik hisobot",
+  "set.dailyFiredNote": "Bugun {n} ta premium olindi",
+  "set.dailyFiredZero": "Bugun premium olilmadi",
+  "set.dailyLate": "Kechagi hisobot",
+  "set.dailyLateNote": "{n} ta premium olingan",
+  "set.streamsNote": "Premium sahifasida tanlanadigan maksimum banklar soni",
+  "set.retryNote2": "Karta rad etilsa necha marta qayta urinadi",
+  "set.capNote2": "Yangi qo'shiladigan kartalar shu limit bilan saqlanadi",
+  "set.maskNote2": "Ishchilar karta raqamini faqat oxirgi 4 ta ko'radi",
+  "set.nOkNote": "Premium muvaffaqiyatli bo'lganda",
+  "set.nLimitNote": "Limit yoki muddat tugaganda",
+  "set.nErrNote": "Xato yuz berganda",
 };
 
 const ru = {
@@ -893,8 +914,6 @@ const ru = {
   "set.pinResetNote":   "Новый код будет запрошен при следующем открытии",
   "set.pinCleared":     "Код удалён",
   "set.pinClearedNote": "Откройте приложение заново",
-  "set.autolock":       "Автоблокировка",
-  "set.autolockNote":   "Блокировать после такого простоя",
   "set.maskPan":        "Скрывать номер",
   "set.maskPanNote":    "Сотрудники видят только последние 4 цифры",
   "set.devices":        "Активные устройства",
@@ -1026,6 +1045,29 @@ const ru = {
   "pin.enter":        "Введите код",
   "pin.note":         "Чтобы открыть панель PremoLux",
   "pin.wrong":        "Неверный код",
+
+  // ── экран ошибки ──
+  "crash.title":       "Приложение дало сбой",
+  "crash.note":        "Произошла непредвиденная ошибка. Данные сохранены. Попробуйте ещё раз.",
+  "crash.retry":       "Попробовать снова",
+  "crash.reset":       "Сбросить настройки",
+  "crash.resetNote":   "Очищаются только настройки — карты и боты на сервере останутся.",
+  "crash.details":     "Технические детали",
+
+  "set.dailyTime": "Время отчёта",
+  "set.dailyNote": "Сообщение придёт в указанное время, пока приложение открыто.",
+  "set.dailyFired": "Ежедневный отчёт",
+  "set.dailyFiredNote": ["Сегодня получено {n} premium","Сегодня получено {n} premium","Сегодня получено {n} premium"],
+  "set.dailyFiredZero": "Сегодня premium не получен",
+  "set.dailyLate": "Отчёт за вчера",
+  "set.dailyLateNote": ["Получено {n} premium","Получено {n} premium","Получено {n} premium"],
+  "set.streamsNote": ["Максимум банков, выбираемых на странице Premium","Максимум банков, выбираемых на странице Premium","Максимум банков, выбираемых на странице Premium"],
+  "set.retryNote2": "Сколько раз пробовать при отклонении карты",
+  "set.capNote2": "Новые карты сохраняются с этим лимитом",
+  "set.maskNote2": "Сотрудники видят только последние 4 цифры карты",
+  "set.nOkNote": "При успешном получении premium",
+  "set.nLimitNote": "Когда лимит или срок исчерпаны",
+  "set.nErrNote": "При возникновении ошибки",
 };
 
 const en = {
@@ -1390,8 +1432,6 @@ const en = {
   "set.pinResetNote":   "A new code will be asked on the next open",
   "set.pinCleared":     "Code cleared",
   "set.pinClearedNote": "Reopen the app",
-  "set.autolock":       "Auto-lock",
-  "set.autolockNote":   "Lock after this much inactivity",
   "set.maskPan":        "Hide card number",
   "set.maskPanNote":    "Workers only see the last 4 digits",
   "set.devices":        "Signed-in devices",
@@ -1523,6 +1563,29 @@ const en = {
   "pin.enter":        "Enter the code",
   "pin.note":         "To open the PremoLux panel",
   "pin.wrong":        "Wrong code",
+
+  // ── crash screen ──
+  "crash.title":       "The app crashed",
+  "crash.note":        "Something unexpected happened. Your data is saved — try again.",
+  "crash.retry":       "Try again",
+  "crash.reset":       "Reset the settings",
+  "crash.resetNote":   "Only local settings are cleared — cards and bots on the server stay.",
+  "crash.details":     "Technical details",
+
+  "set.dailyTime": "Report time",
+  "set.dailyNote": "You get a message at the set time while the app is open.",
+  "set.dailyFired": "Daily report",
+  "set.dailyFiredNote": ["{n} premium received today","{n} premium received today","{n} premium received today"],
+  "set.dailyFiredZero": "No premium today",
+  "set.dailyLate": "Yesterday's report",
+  "set.dailyLateNote": ["{n} premium received","{n} premium received","{n} premium received"],
+  "set.streamsNote": "Maximum banks you can pick on the Premium page",
+  "set.retryNote2": "How many times to retry a rejected card",
+  "set.capNote2": "New cards are saved with this limit",
+  "set.maskNote2": "Workers only see the last 4 digits of the card",
+  "set.nOkNote": "When premium is received successfully",
+  "set.nLimitNote": "When a limit or expiry is reached",
+  "set.nErrNote": "When something fails",
 };
 
 export const DICT = { uz, ru, en };
@@ -1555,8 +1618,7 @@ const plural = (n, v, vars) => {
     if (a > 10 && a < 20) return fill(v[2], { n, ...vars });
     if (b === 1) return fill(v[0], { n, ...vars });
     if (b >= 2 && b <= 4) return fill(v[1], { n, ...vars });
-    return fill(v[2], { n, ...vars });
-  }
+    return fill(v[2], { n, ...vars });  }
   // o'zbek va ingliz: 1 boshqa hammasidan farq qiladi
   return fill(Math.abs(n) === 1 ? v[0] : v[v.length - 1], { n, ...vars });
 };
@@ -1573,3 +1635,4 @@ export const tArray = (key, vars) => {
   const v = (pack[key] !== undefined ? pack[key] : uz[key]) || [];
   return Array.isArray(v) ? v : [v];
 };
+

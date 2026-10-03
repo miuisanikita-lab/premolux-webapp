@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext, Component } from "react";
 import { LANGS, t, tp, tArray, setLang as setLangGlobal, getLang } from "./i18n";
 
 // ─────────────────────────────────────────────
@@ -79,6 +79,109 @@ const themes = {
 
 // rasmiy kanal — Onboarding va yordam sahifalarida ishlatiladi
 const CHANNEL = "@PremoLux";
+
+// ═════════════════════════════════════════
+// XATOLAR EKRANI (Error Boundary)
+// ═════════════════════════════════════════
+// Oldin ilovada ErrorBoundary yo'q edi: bitta komponent ishdan chiqsa
+// (masalan backend noto'g'ri shakl qaytarsa) butun ilova oq ekran
+// bo'lib qolardi — nima bo'lganini ko'rish ham, tuzatish ham mumkin
+// bo'lmasdi. Endi har bir xato ushlanadi.
+
+const CrashScreen = ({ err, stack }) => {
+  const th = themes.amoled;   // DIQQAT: bu t emas — import qilingan t() ni yopib qo'ymaslik uchun
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:99999, background:th.bgCss, color:th.t1,
+      display:"flex", alignItems:"center", justifyContent:"center", padding:24,
+      fontFamily:"Inter, system-ui, -apple-system, sans-serif",
+    }}>
+      <div style={{ maxWidth:520, width:"100%" }}>
+        <div style={{
+          width:54, height:54, borderRadius:16, margin:"0 auto 18px",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          background:th.err+"18", border:`1px solid ${th.err}35`, color:th.err,
+        }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 9v4M12 17h.01"/>
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+          </svg>
+        </div>
+
+        <p style={{ textAlign:"center", fontSize:21, fontWeight:800, letterSpacing:"-0.03em" }}>
+          {t("crash.title")}
+        </p>
+        <p style={{ textAlign:"center", fontSize:13.5, color:th.t3, marginTop:8, lineHeight:1.55 }}>
+          {t("crash.note")}
+        </p>
+
+        <div style={{
+          marginTop:20, padding:"13px 15px", borderRadius:14,
+          background:th.s1, border:`1px solid ${th.b1}`,
+          fontFamily:"'SF Mono',ui-monospace,monospace", fontSize:11.5, lineHeight:1.6,
+          color:t.t2, wordBreak:"break-word", maxHeight:140, overflowY:"auto",
+        }}>
+          {String(err?.message || err)}
+        </div>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:9, marginTop:18 }}>
+          <button onClick={()=>location.reload()} style={{
+            width:"100%", padding:"13px", borderRadius:13, cursor:"pointer",
+            background:th.acc, color:th.accTxt, border:"none",
+            fontFamily:"inherit", fontSize:13.5, fontWeight:700,
+          }}>{t("crash.retry")}</button>
+
+          <button onClick={CrashScreen.clear} style={{
+            width:"100%", padding:"12px", borderRadius:13, cursor:"pointer",
+            background:th.s1, color:t.t2, border:`1px solid ${th.b1}`,
+            fontFamily:"inherit", fontSize:13, fontWeight:600,
+          }}>{t("crash.reset")}</button>
+        </div>
+
+        <p style={{ textAlign:"center", fontSize:11, color:th.t4, marginTop:16, lineHeight:1.5 }}>
+          {t("crash.resetNote")}
+        </p>
+
+        {stack && <details style={{ marginTop:14 }}>
+          <summary style={{ cursor:"pointer", fontSize:11.5, color:th.t4, textAlign:"center" }}>
+            {t("crash.details")}
+          </summary>
+          <pre style={{
+            marginTop:9, padding:"11px", borderRadius:11, background:th.s1,
+            border:`1px solid ${th.b1}`, fontSize:10, lineHeight:1.5, color:th.t3,
+            overflowX:"auto", whiteSpace:"pre-wrap", maxHeight:200,
+          }}>{stack}</pre>
+        </details>}
+      </div>
+    </div>
+  );
+};
+CrashScreen.clear = () => {
+  try {
+    localStorage.removeItem("premolux_v1");
+    localStorage.removeItem("premolux_active_order");
+  } catch {}
+  location.reload();
+};
+
+export class ErrorBoundary extends Component {
+  constructor(p) { super(p); this.state = { err:null, stack:"" }; }
+
+  static getDerivedStateFromError(err) {
+    return { err, stack: (err?.stack || "").split("\n").slice(0,12).join("\n") };
+  }
+
+  componentDidCatch(err, info) {
+    // Telegram'da ishdan chiqqanini ko'rish uchun konsolga yozamiz
+    console.error("[PremoLux] Ilova ishdan chiqdi:", err, info?.componentStack || "");
+  }
+
+  render() {
+    if (!this.state.err) return this.props.children;
+    return <CrashScreen err={this.state.err} stack={this.state.stack}/>;
+  }
+}
 
 const ThemeCtx = createContext(themes.amoled);
 const useTheme = () => useContext(ThemeCtx);
@@ -2180,7 +2283,7 @@ const Lane = ({ lane }) => {
 const PremiumPage = ({ goto }) => {
   const th = useTheme();
   const toast = useToast();
-  const { account, bots=[], people, setPeople, role, bump } = useData();
+  const { account, bots=[], people, setPeople, role, bump, cfg } = useData();
 
   const wired = bots.filter(b=>b.connected);
   const isWorker = role === "worker";
@@ -2207,7 +2310,10 @@ const PremiumPage = ({ goto }) => {
   };
 
   const avail = who ? groups(who) : [];
-  const max   = avail.length;
+  // "Bir vaqtda oqim" sozlamasi — fayl kartalar soni bilan birga
+  // eng katta qat'iymni beradi (avval butunlay ishlatilmasdi)
+  const cap   = Math.max(1, cfg.streams || 8);
+  const max   = Math.min(avail.length, cap);
   const n     = Math.min(parseInt(want||"0",10)||0, max);
   const chosen= avail.slice(0, n);
 
@@ -2321,6 +2427,9 @@ const PremiumPage = ({ goto }) => {
       const res = await api.post("/orders/start", {
         personId: who?.id,
         banks: chosen.map(g=>({ bankId:g.id, cardId: picks[g.id] || g.cards[0].id })),
+        // sozlamalar endi haqiqiy — server ularga qarab ishlaydi
+        maxRetries: cfg.retry ?? 1,
+        cardCap:    cfg.cardCap ?? 3,
       });
       orderId = res?.orderId;
     } catch (e) {
@@ -4656,13 +4765,13 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
       {/* ── OQIM ── */}
       <SetGroup label={t("set.flow")} delay={0.02}>
         <SetRow icon={<Ic.Bot s={16} c={th.t2}/>} title={t("set.flowStreams")}
-          note={t("set.flowStreamsNote")}
+          note={t("set.streamsNote")}
           right={<Stepper value={cfg.streams} min={1} max={20} onChange={v=>set("streams",v)} width={94}/>}/>
         <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.flowRetry")}
-          note={t("set.flowRetryNote")}
+          note={t("set.retryNote2")}
           right={<Stepper value={cfg.retry} min={0} max={5} onChange={v=>set("retry",v)} width={94}/>}/>
         <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title={t("set.flowCap")}
-          note={t("set.flowCapNote")}
+          note={t("set.capNote2")}
           right={<Stepper value={cfg.cardCap} min={1} max={10} onChange={v=>set("cardCap",v)} width={94}/>} last/>
       </SetGroup>
 
@@ -4675,14 +4784,8 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
           note={t("set.pinResetNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
           onClick={()=>{ setPin(null); toast({kind:"warn",title:t("set.pinCleared"),note:t("set.pinClearedNote")}); }}/>
-        {cfg.pin && (
-          <SetRow icon={<Ic.Clock s={16} c={th.t2}/>} title={t("set.autolock")}
-            note={t("set.autolockNote")}
-            right={<Segments value={cfg.lockAfter} onChange={v=>set("lockAfter",v)}
-              options={[{v:1,l:"1d"},{v:5,l:"5d"},{v:15,l:"15d"},{v:0,l:"Yo'q"}]}/>}/>
-        )}
         <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title={t("set.maskPan")}
-          note={t("set.maskPanNote")}
+          note={t("set.maskNote2")}
           right={<Switch on={cfg.maskPan} onChange={v=>set("maskPan",v)}/>}/>
         {/* eslatma: bu qator HECH NARSA qilmaydi — oyna ochilmaydi, hech
             narsa yuklanmaydi. Backend hali sessiya ro'yxatini bermagani uchun
@@ -4694,13 +4797,16 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
       {/* ── BILDIRISHNOMA ── */}
       <SetGroup label={t("set.notif")} delay={0.12}>
         <SetRow icon={<Ic.Star s={16} c={th.t2}/>} title={t("set.notifOk")}
+          note={t("set.nOkNote")}
           right={<Switch on={cfg.nOk} onChange={v=>set("nOk",v)} tone={th.ok}/>}/>
         <SetRow icon={<Ic.Warn s={16} c={th.t2}/>} title={t("set.notifLimit")}
+          note={t("set.nLimitNote")}
           right={<Switch on={cfg.nLimit} onChange={v=>set("nLimit",v)} tone={th.warn}/>}/>
         <SetRow icon={<Ic.X s={16} c={th.t2}/>} title={t("set.notifErr")}
+          note={t("set.nErrNote")}
           right={<Switch on={cfg.nErr} onChange={v=>set("nErr",v)} tone={th.err}/>}/>
         <SetRow icon={<Ic.Clock s={16} c={th.t2}/>} title={t("set.daily")}
-          note={cfg.daily ? t("set.dailyOn",{t:String(cfg.dailyAt).padStart(2,"0")}) : t("set.dailyOff")}
+          note={cfg.daily ? t("set.dailyNote") : t("set.dailyOff")}
           right={<Switch on={cfg.daily} onChange={v=>set("daily",v)}/>} last={!cfg.daily}/>
         {cfg.daily && (
           <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.dailyTime")}
@@ -5006,7 +5112,8 @@ const CopyField = ({ label, value, mono=true, grow, tone, wide }) => {
   );
 };
 
-const CardFlip = ({ card, children }) => {
+// "Raqamni yashirish" sozlamasi: ishchilar uchun to'liq raqam/CVV ko'rinmasin
+const CardFlip = ({ card, children, masked }) => {
   const th = useTheme();
   const b  = gB(card.bankId);
   const [on,sOn] = useState(false);
@@ -5064,7 +5171,16 @@ const CardFlip = ({ card, children }) => {
           padding:"11px 12px", display:"flex", flexDirection:"column", gap:7,
         }}>
           <div style={{ display:"flex", gap:7, alignItems:"stretch" }}>
-            <CopyField label={t("card.flip.number")} value={card.num} grow wide/>
+            {masked
+        ? <div style={{
+            display:"flex", alignItems:"center", gap:9, padding:"11px 12px",
+            borderRadius:12, background:th.s2, border:`1px dashed ${th.b2}`,
+            color:th.t3, fontSize:12, lineHeight:1.45,
+          }}>
+            <Ic.Lock s={15} c={th.t4}/>
+            <span>{t("set.maskPanNote")}</span>
+          </div>
+        : <CopyField label={t("card.flip.number")} value={card.num} grow wide/>}
             {/* ortga qaytarish */}
             <button
               onTouchStart={e=>e.stopPropagation()} onTouchEnd={e=>e.stopPropagation()} onTouchMove={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} onMouseUp={e=>e.stopPropagation()}
@@ -5085,7 +5201,7 @@ const CardFlip = ({ card, children }) => {
           </div>
 
           <div style={{ display:"flex", gap:7 }}>
-            <CopyField label={t("card.flip.cvv")}    value={card.cvv} tone={b.c}/>
+            {!masked && <CopyField label={t("card.flip.cvv")}    value={card.cvv} tone={b.c}/>}
             <CopyField label={t("card.flip.exp")} value={card.exp}/>
             <CopyField label={t("card.flip.owner")}  value={card.name} mono={false} grow/>
           </div>
@@ -5115,6 +5231,7 @@ const BankM=({onAdd,onClose})=>{
 
 const CardM=({pN,bN,onAdd,onClose})=>{
   const th=useTheme();const b=gB(BL.find(x=>x.name===bN)?.id||"");
+  const { cfg } = useContext(DataCtx) || {};
   const [f,sF]=useState({name:pN?.toUpperCase()||"",num:"",exp:"",cvv:""});const[er,sE]=useState("");
   const up=(k,v)=>sF(p=>({...p,[k]:v}));
   const fN=v=>v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
@@ -5124,7 +5241,8 @@ const CardM=({pN,bN,onAdd,onClose})=>{
     if(f.exp.length<5){sE(t("cardm.errExp"));return;}
     if(f.cvv.length<3){sE(t("cardm.errCvv"));return;}
     if(!f.name.trim()){sE(t("cardm.errName"));return;}
-    onAdd({...f,bankId:BL.find(x=>x.name===bN)?.id||bN,id:Date.now(),used:0,limit:3});onClose();
+    // limit "Karta limiti" sozlamasidan olinadi (avval doim 3 qo'yilardi)
+    onAdd({...f,bankId:BL.find(x=>x.name===bN)?.id||bN,id:Date.now(),used:0,limit:cfg.cardCap||3});onClose();
   };
   return <Modal onClose={onClose}><MH title={t("cardm.title")} sub={`${pN} · ${bN}`} onClose={onClose}/>
     <div style={{ padding:18,display:"flex",flexDirection:"column",gap:12,maxHeight:"65vh",overflowY:"auto" }}>
@@ -5147,7 +5265,10 @@ const CardM=({pN,bN,onAdd,onClose})=>{
 const CardsPage=()=>{
   const th=useTheme();
   const toast = useToast();
-  const { people:P, setPeople:sP } = useData();
+  const { people:P, setPeople:sP, role, cfg } = useData();
+  // "Raqamni yashirish" sozlamasi endi ishlaydi: ishchilar (partner/worker)
+  // faqat oxirgi 4 raqamni ko'radi, egasi to'liq raqamni ko'radi.
+  const masked = cfg?.maskPan !== false && role !== "owner";
   const [stk,sSt]=useState([{v:"p"}]);const[mod,sM]=useState(null);const[cnf,sCn]=useState(null);
   const [add,sA]=useState(false);const[nn,sNN]=useState("");const[ne,sNE]=useState("");
   const [fresh,sFresh]=useState(null);
@@ -5276,7 +5397,7 @@ const CardsPage=()=>{
           if (dead && fresh0) seenLimit.add(card.id);
           const slam = dead && fresh0;
           return (
-          <div key={card.id} data-item><SwipeRow label="Karta" onDelete={()=>{const el=document.querySelector(`[data-card="${card.id}"]`);const snap={...card};const pid=c.pid;toss(el,()=>{delC(card.id);sUndo({id:Date.now(),title:t("cards.cardDeleted"),note:`•••• ${t4}`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,snap]}:x))});});}}><CardFlip card={card}><div data-row data-card={card.id}
+          <div key={card.id} data-item><SwipeRow label="Karta" onDelete={()=>{const el=document.querySelector(`[data-card="${card.id}"]`);const snap={...card};const pid=c.pid;toss(el,()=>{delC(card.id);sUndo({id:Date.now(),title:t("cards.cardDeleted"),note:`•••• ${t4}`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,snap]}:x))});});}}><CardFlip card={card} masked={masked}><div data-row data-card={card.id}
             className={`${fresh===card.id?"land ":""}${slam?"jolt ":""}`}
             style={{ ...glass(th,0.04),borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:11,position:"relative",overflow:"hidden",transformStyle:"preserve-3d" }}>
 
@@ -6154,7 +6275,7 @@ export default function App() {
 
   const [cfg, setCfg] = useState({
     streams:8, retry:1, cardCap:3,
-    pin:false, lockAfter:5, maskPan:true,
+    pin:false, maskPan:true,
     nOk:true, nLimit:true, nErr:true, daily:false, dailyAt:21,
     haptic:true, calm:false,
   });
@@ -6180,8 +6301,19 @@ export default function App() {
 
   // toast navbati
   const [toasts, setToasts] = useState([]);
-  const pushToast = ({ kind="info", title, note, ms=2600 }) =>
+  // Bildirishnoma sozlamalari avval faqat o'zgaruvchida saqlanardi va
+  // hech qayerda ishlatilmasdi. Endi ular haqiqiy:
+  //   nOk    — muvaffaqiyat xabarlari
+  //   nErr   — xato xabarlari
+  //   nLimit — ogohlantirish xabarlari (limit / muddat)
+  const toastAllowed = kind => kind === "ok"    ? cfg.nOk    !== false
+                             : kind === "err"   ? cfg.nErr   !== false
+                             : kind === "warn"  ? cfg.nLimit !== false
+                             : true;                       // info — doim
+  const pushToast = ({ kind="info", title, note, ms=2600 }) => {
+    if (!toastAllowed(kind)) return;
     setToasts(l => [...l.slice(-2), { id: Date.now()+Math.random(), kind, title, note, ms }]);
+  };
   const killToast = id => setToasts(l => l.filter(t => t.id !== id));
 
 
@@ -6260,6 +6392,49 @@ export default function App() {
     }, 350);
     return ()=>clearTimeout(t);
   }, [ready, account, bots, people, cfg, role, partners, workers, themeId, pin, codes, hist, lang]);
+
+  // ── kunlik hisobot ──
+  // Belgilangan soatda (masalan 21:00) ilova ochiq bo'lgan paytda kecha
+  // qancha premium olingani haqida xabar beriladi. Ilova yopiq bo'lsa,
+  // keyingi ochilishda "kechagi hisobot" ko'rsatiladi.
+  useEffect(()=>{
+    if (!ready || !cfg.daily) return;
+    const hh = Math.max(0, Math.min(23, cfg.dailyAt ?? 21));
+    const now = new Date();
+    const keyOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const todayKey = keyOf(now);
+    const sent = (()=>{ try { return localStorage.getItem("premolux_daily_sent"); } catch { return null; } })();
+
+    const fire = () => {
+      if (localStorage.getItem("premolux_daily_sent") === todayKey) return;
+      try { localStorage.setItem("premolux_daily_sent", todayKey); } catch {}
+      const n = hist.find(x=>x.d===todayKey)?.n || 0;
+      pushToast({
+        kind:"info", ms:4200,
+        title: t("set.dailyFired"),
+        note: n > 0 ? t("set.dailyFiredNote",{n}) : t("set.dailyFiredZero"),
+      });
+    };
+
+    // kechagi hisobotni ko'rsatib qo'ymagan bo'lsak — ko'rsatamiz
+    const y = new Date(now); y.setDate(y.getDate()-1);
+    const yKey = keyOf(y);
+    const yh = sent === yKey ? null : hist.find(x=>x.d===yKey);
+    if (yh && yh.n > 0) {
+      try { localStorage.setItem("premolux_daily_sent", yKey); } catch {}
+      const n = yh.n;
+      setTimeout(()=>pushToast({ kind:"info", ms:4200,
+        title: t("set.dailyLate"), note: t("set.dailyLateNote",{n}) }), 1400);
+      return;
+    }
+
+    // bugungi soatgacha kutamiz
+    const next = new Date(now);
+    next.setHours(hh, 0, 0, 0);
+    if (next <= now) next.setDate(next.getDate()+1);
+    const timer = setTimeout(fire, Math.min(next - now, 2147483647));
+    return () => clearTimeout(timer);
+  }, [ready, cfg.daily, cfg.dailyAt]);
 
   // sahifa yo'nalishi: o'ngdagi tabga o'tsa chapdan sirg'aladi
   const ORDER = ["premium","bots","cards","team","stats","profile"];
