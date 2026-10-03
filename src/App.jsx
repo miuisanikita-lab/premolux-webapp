@@ -6044,7 +6044,15 @@ export default function App() {
     { id:3, username:"", connected:false, active:0, maxLogins:15, online:false },
   ]);
   const [people, setPeople] = useState([]);
-  const [role, setRole] = useState("owner");
+  // role — null: ro'yxatdan o'tmagan (Onboarding ko'rsatiladi)
+  // localStorage'dan tiklangan bo'lsa — saqlanadi
+  const [role, setRole] = useState(() => {
+    try {
+      const raw = localStorage.getItem("premolux_v1");
+      const d = raw ? JSON.parse(raw) : null;
+      return d?.role || null;
+    } catch { return null; }
+  });
   const [codes, setCodes] = useState([]);
   const [hist, setHist] = useState([]);   // null | owner | partner | worker
 
@@ -6154,6 +6162,13 @@ export default function App() {
 
       try {
         await api.post("/auth/verify", {}).catch(e=>{
+          // 428 (sub_required) HAR DOIM ishlashi kerak —
+          // foydalanuvchi kanal/guruhdan chiqib ketgan bo'lsa,
+          // keyingi ochilishda ham Onboarding ko'rsatiladi.
+          if (e.status === 428 && e.code === "sub_required") {
+            setRole(null);
+            return;
+          }
           if (bootWarned.current) return;
           bootWarned.current = true;
           if (e.code === "NETWORK" || e.code === "TIMEOUT") {
