@@ -26,58 +26,6 @@ index 55efb2c..756dfda 100644
  # ── ish jarayoni ──
  MAX_PARALLEL_LANES=12
  OTP_WAIT_TIMEOUT_SEC=90
-diff --git a/app/__pycache__/__init__.cpython-310.pyc b/app/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..4929116
-Binary files /dev/null and b/app/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/__pycache__/main.cpython-310.pyc b/app/__pycache__/main.cpython-310.pyc
-new file mode 100644
-index 0000000..73a6d26
-Binary files /dev/null and b/app/__pycache__/main.cpython-310.pyc differ
-diff --git a/app/api/__pycache__/__init__.cpython-310.pyc b/app/api/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..63d5490
-Binary files /dev/null and b/app/api/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/__init__.cpython-310.pyc b/app/api/routes/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..0414da7
-Binary files /dev/null and b/app/api/routes/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/access_router.cpython-310.pyc b/app/api/routes/__pycache__/access_router.cpython-310.pyc
-new file mode 100644
-index 0000000..0209349
-Binary files /dev/null and b/app/api/routes/__pycache__/access_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/auth_router.cpython-310.pyc b/app/api/routes/__pycache__/auth_router.cpython-310.pyc
-new file mode 100644
-index 0000000..b8171d3
-Binary files /dev/null and b/app/api/routes/__pycache__/auth_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/bots_router.cpython-310.pyc b/app/api/routes/__pycache__/bots_router.cpython-310.pyc
-new file mode 100644
-index 0000000..92fd893
-Binary files /dev/null and b/app/api/routes/__pycache__/bots_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/debug_router.cpython-310.pyc b/app/api/routes/__pycache__/debug_router.cpython-310.pyc
-new file mode 100644
-index 0000000..6f98ffd
-Binary files /dev/null and b/app/api/routes/__pycache__/debug_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/orders_router.cpython-310.pyc b/app/api/routes/__pycache__/orders_router.cpython-310.pyc
-new file mode 100644
-index 0000000..e5fa45d
-Binary files /dev/null and b/app/api/routes/__pycache__/orders_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/people_router.cpython-310.pyc b/app/api/routes/__pycache__/people_router.cpython-310.pyc
-new file mode 100644
-index 0000000..697cb6c
-Binary files /dev/null and b/app/api/routes/__pycache__/people_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/relay_router.cpython-310.pyc b/app/api/routes/__pycache__/relay_router.cpython-310.pyc
-new file mode 100644
-index 0000000..1e04e6e
-Binary files /dev/null and b/app/api/routes/__pycache__/relay_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/settings_router.cpython-310.pyc b/app/api/routes/__pycache__/settings_router.cpython-310.pyc
-new file mode 100644
-index 0000000..e0f4f93
-Binary files /dev/null and b/app/api/routes/__pycache__/settings_router.cpython-310.pyc differ
-diff --git a/app/api/routes/__pycache__/ws_router.cpython-310.pyc b/app/api/routes/__pycache__/ws_router.cpython-310.pyc
-new file mode 100644
-index 0000000..750d59a
-Binary files /dev/null and b/app/api/routes/__pycache__/ws_router.cpython-310.pyc differ
 diff --git a/app/api/routes/debug_router.py b/app/api/routes/debug_router.py
 index 9dede74..061fcee 100644
 --- a/app/api/routes/debug_router.py
@@ -275,22 +223,6 @@ index 6481928..12b7e2e 100644
      await manager.connect(order_id, websocket)
      try:
          while True:
-diff --git a/app/core/__pycache__/__init__.cpython-310.pyc b/app/core/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..d3eac3d
-Binary files /dev/null and b/app/core/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/core/__pycache__/config.cpython-310.pyc b/app/core/__pycache__/config.cpython-310.pyc
-new file mode 100644
-index 0000000..7f9a19a
-Binary files /dev/null and b/app/core/__pycache__/config.cpython-310.pyc differ
-diff --git a/app/core/__pycache__/db.cpython-310.pyc b/app/core/__pycache__/db.cpython-310.pyc
-new file mode 100644
-index 0000000..4e8d20a
-Binary files /dev/null and b/app/core/__pycache__/db.cpython-310.pyc differ
-diff --git a/app/core/__pycache__/security.cpython-310.pyc b/app/core/__pycache__/security.cpython-310.pyc
-new file mode 100644
-index 0000000..080370e
-Binary files /dev/null and b/app/core/__pycache__/security.cpython-310.pyc differ
 diff --git a/app/core/config.py b/app/core/config.py
 index b9e0a96..00f11cd 100644
 --- a/app/core/config.py
@@ -393,50 +325,6 @@ index 4591ce7..878176a 100644
      allow_headers=["*"],
  )
  
-diff --git a/app/models/__pycache__/__init__.cpython-310.pyc b/app/models/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..64c9ff6
-Binary files /dev/null and b/app/models/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/models/__pycache__/tables.cpython-310.pyc b/app/models/__pycache__/tables.cpython-310.pyc
-new file mode 100644
-index 0000000..a1a52d4
-Binary files /dev/null and b/app/models/__pycache__/tables.cpython-310.pyc differ
-diff --git a/app/schemas/__pycache__/__init__.cpython-310.pyc b/app/schemas/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..3ef6137
-Binary files /dev/null and b/app/schemas/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/__init__.cpython-310.pyc b/app/services/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..ec18869
-Binary files /dev/null and b/app/services/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/access_service.cpython-310.pyc b/app/services/__pycache__/access_service.cpython-310.pyc
-new file mode 100644
-index 0000000..e494fce
-Binary files /dev/null and b/app/services/__pycache__/access_service.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/bank_page.cpython-310.pyc b/app/services/__pycache__/bank_page.cpython-310.pyc
-new file mode 100644
-index 0000000..a6d839d
-Binary files /dev/null and b/app/services/__pycache__/bank_page.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/crypto.cpython-310.pyc b/app/services/__pycache__/crypto.cpython-310.pyc
-new file mode 100644
-index 0000000..fb4fe69
-Binary files /dev/null and b/app/services/__pycache__/crypto.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/order_service.cpython-310.pyc b/app/services/__pycache__/order_service.cpython-310.pyc
-new file mode 100644
-index 0000000..806167b
-Binary files /dev/null and b/app/services/__pycache__/order_service.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/sms_filter.cpython-310.pyc b/app/services/__pycache__/sms_filter.cpython-310.pyc
-new file mode 100644
-index 0000000..b87c03e
-Binary files /dev/null and b/app/services/__pycache__/sms_filter.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/stats_service.cpython-310.pyc b/app/services/__pycache__/stats_service.cpython-310.pyc
-new file mode 100644
-index 0000000..3b629ab
-Binary files /dev/null and b/app/services/__pycache__/stats_service.cpython-310.pyc differ
-diff --git a/app/services/__pycache__/telethon_pool.cpython-310.pyc b/app/services/__pycache__/telethon_pool.cpython-310.pyc
-new file mode 100644
-index 0000000..636a374
-Binary files /dev/null and b/app/services/__pycache__/telethon_pool.cpython-310.pyc differ
 diff --git a/app/services/order_service.py b/app/services/order_service.py
 index b9c4695..e1736c2 100644
 --- a/app/services/order_service.py
@@ -476,14 +364,6 @@ index b9c4695..e1736c2 100644
  
      await asyncio.gather(*[_guarded(lid) for lid in lane_ids], return_exceptions=True)
  
-diff --git a/app/workers/__pycache__/__init__.cpython-310.pyc b/app/workers/__pycache__/__init__.cpython-310.pyc
-new file mode 100644
-index 0000000..73b0bb1
-Binary files /dev/null and b/app/workers/__pycache__/__init__.cpython-310.pyc differ
-diff --git a/app/workers/__pycache__/lane_worker.cpython-310.pyc b/app/workers/__pycache__/lane_worker.cpython-310.pyc
-new file mode 100644
-index 0000000..fd65808
-Binary files /dev/null and b/app/workers/__pycache__/lane_worker.cpython-310.pyc differ
 diff --git a/app/workers/lane_worker.py b/app/workers/lane_worker.py
 index 1fddb93..714c41f 100644
 --- a/app/workers/lane_worker.py
