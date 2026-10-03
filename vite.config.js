@@ -7,6 +7,17 @@ export default defineConfig({
     outDir: "dist",
     assetsDir: "assets",
     sourcemap: false,
+    // Ilova kodi va kutubxonalar alohida — kichik o'zgarishda
+    // React chunk'i QAYTA YUKLANMAYDI (brauzer keshdan oladi)
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("react")) return "react";
+          return "vendor";
+        },
+      },
+    },
   },
   test: {
     environment: "jsdom",
