@@ -22,81 +22,123 @@ import { API_BASE, WS_BASE, MOCK, ApiError, api, hap, setHaptic, authHeader } fr
 // foydalanuvchi nima bo'layotganini bilmasdi. Endi:
 //   • brend belgisi + ilova nomi + progress chizig'i
 //   • eng ko'pi bilan 2.6 soniyada o'z-o'zidan o'tadi
-const SPLASH_MIN = 1800;   // animatsiya kamida shuncha ko'rinib tursin
-const SPLASH_FADE = 420;   // puflab o'chish davomiyligi
-
-const Splash = ({ theme, done }) => {
-  const raf = useRef(0);
+const SPLASH_MIN = 2400;   // animatsiya kamida shuncha ko'rinib turadi
+const SPLASH_FADE = 520;   // puflab o'chish davomiyligi
+const Splash = ({ theme, done, stage = 0 }) => {
   const [pct, setPct] = useState(0);
   const [out, setOut] = useState(false);
 
+  // progress haqiqiy o'tish tezligiga emas, balki vaqtga bog'liq —
+  // shunda u silliq va "inson tomonidan boshqarilgandek" ko'rinadi
   useEffect(()=>{
+    let raf = 0;
     const t0 = performance.now();
     const paint = now => {
-      const p = Math.min(1, (now - t0) / SPLASH_MIN);
-      setPct(p);
-      raf.current = requestAnimationFrame(paint);
+      const raw = Math.min(1, (now - t0) / SPLASH_MIN);
+      // easeOutCubic — boshida tez, oxirida sekin (sekinlashuv hissi)
+      const e = 1 - Math.pow(1 - raw, 3);
+      setPct(e * 88);
+      if (raw < 1) raf = requestAnimationFrame(paint);
     };
-    raf.current = requestAnimationFrame(paint);
-    return ()=>cancelAnimationFrame(raf.current);
+    raf = requestAnimationFrame(paint);
+    return ()=>cancelAnimationFrame(raf);
   }, []);
 
   useEffect(()=>{
     if (!done) return;
+    setPct(100);
     const t = setTimeout(()=>setOut(true), SPLASH_FADE);
     return ()=>clearTimeout(t);
   }, [done]);
+
+  // qaysi bosqichda turganimiz — haqiqiy holatdan
+  const stageIx = Number.isFinite(stage) ? Math.max(0, Math.min(3, stage)) : 0;
+  const status = [t("splash.s1"), t("splash.s2"), t("splash.s3"), t("splash.s4")][stageIx];
 
   return (
     <ThemeCtx.Provider value={theme}>
       <Css theme={theme}/>
       <div style={{
         position:"fixed", inset:0, display:"flex", flexDirection:"column",
-        alignItems:"center", justifyContent:"center", gap:18,
-        background:theme.bgCss, overflow:"hidden",
+        alignItems:"center", justifyContent:"center", overflow:"hidden",
+        background:theme.bgCss,
         opacity: out ? 0 : 1,
-        transform: out ? "scale(1.03)" : "scale(1)",
-        transition:`opacity ${SPLASH_FADE}ms ease, transform ${SPLASH_FADE}ms ease`,
+        transform: out ? "scale(1.025)" : "scale(1)",
+        transition:`opacity ${SPLASH_FADE}ms cubic-bezier(.4,0,.2,1),
+                    transform ${SPLASH_FADE}ms cubic-bezier(.4,0,.2,1)`,
       }}>
-        {/* yumshoq yorug'lik dog'i */}
+        {/* yumshoq yorug'lik dog'i — brend markazida */}
         <span style={{
-          position:"absolute", width:280, height:280, borderRadius:"50%",
-          background:`radial-gradient(circle, ${theme.acc}26 0%, transparent 70%)`,
-          filter:"blur(18px)", animation:"splashGlow 2.6s ease-in-out infinite",
+          position:"absolute", top:"50%", left:"50%",
+          width:360, height:360, margin:"-180px 0 0 -180px", borderRadius:"50%",
+          background:`radial-gradient(circle, ${theme.acc}1f 0%, transparent 68%)`,
+          filter:"blur(26px)", animation:"splashGlow 3.4s ease-in-out infinite",
         }}/>
 
-        {/* belgi */}
-        <span className="splashMark" style={{
-          position:"relative", width:76, height:76, borderRadius:24,
-          background:`linear-gradient(150deg, ${theme.acc}2e, ${theme.acc}12)`,
+        {/* ── belgi: chiziladigan yulduz ──
+            Ilovadagi Sketch uslubi — chiziq o'zini chizadi. */}
+        <span className="spBadge" style={{
+          position:"relative", width:84, height:84, borderRadius:27,
+          background:`linear-gradient(155deg, ${theme.acc}26, ${theme.acc}0d)`,
           border:`1px solid ${theme.accBd}`,
           display:"flex", alignItems:"center", justifyContent:"center",
-          boxShadow:`0 10px 40px ${theme.accSub}`,
+          boxShadow:`0 14px 46px ${theme.acc}14, inset 0 1px 0 ${theme.acc}1a`,
         }}>
-          <Ic.Star s={32} c={theme.acc}/>
+          <svg width="42" height="42" viewBox="0 0 42 42" fill="none">
+            <path className="spDraw" style={{"--len":"168"}}
+              d="M21 5.5c1.9 8.2 5.3 11.6 13.5 13.5-8.2 1.9-11.6 5.3-13.5 13.5C19.1 24.3 15.7 20.9 7.5 19 15.7 17.1 19.1 13.5 21 5.5Z"
+              stroke={theme.acc} strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round"/>
+          </svg>
         </span>
 
-        {/* nom */}
-        <div style={{ position:"relative", textAlign:"center" }}>
-          <p style={{ fontSize:20, fontWeight:800, letterSpacing:"-0.03em", color:theme.t1 }}>
-            PremoLux
-          </p>
-          <p className="splashTag" style={{ fontSize:11.5, color:theme.t4, marginTop:4, letterSpacing:"0.02em" }}>
-            {t("splash.tag")}
-          </p>
+        {/* ── nom ── */}
+        <div className="spName" style={{ position:"relative", textAlign:"center", marginTop:22 }}>
+          <p style={{
+            fontSize:26, fontWeight:800, letterSpacing:"-0.045em",
+            color:theme.t1, lineHeight:1,
+          }}>PremoLux</p>
         </div>
 
-        {/* progress */}
-        <span style={{
-          position:"relative", width:132, height:3, borderRadius:2,
-          background:theme.s2, overflow:"hidden",
-        }}>
-          <span style={{
-            display:"block", height:"100%", borderRadius:2,
-            width:`${(done ? 100 : pct*92).toFixed(1)}%`,
-            background:`linear-gradient(90deg, ${theme.acc}, ${theme.acc}80)`,
-          }}/>
+        {/* ── mikro-yorliq ── */}
+        <p className="spTag" style={{
+          position:"relative", marginTop:9, fontSize:9.5, fontWeight:600,
+          letterSpacing:"0.2em", textTransform:"uppercase", color:theme.t4,
+        }}>{t("splash.tag")}</p>
+
+        {/* ── progress ── */}
+        <span style={{ position:"relative", marginTop:34, width:168, height:4 }}>
+          <span className="spTrack" style={{
+            position:"absolute", inset:0, borderRadius:4,
+            background:theme.s2, overflow:"hidden",
+          }}>
+            <span className="spBar" style={{
+              position:"absolute", inset:0, width:`${pct}%`,
+              borderRadius:4,
+              background:`linear-gradient(90deg, ${theme.acc}, ${theme.acc}b3)`,
+              overflow:"hidden",
+            }}>
+              {/* yug'urib boruvchi porlash */}
+              <span className="spShine" style={{
+                position:"absolute", top:0, bottom:0, width:"38%",
+                background:`linear-gradient(90deg, transparent, ${theme.bg}99, transparent)`,
+              }}/>
+            </span>
+          </span>
         </span>
+
+        {/* ── holat qatori ── */}
+        <p className="spStatus" key={stage} style={{
+          position:"relative", marginTop:15, fontSize:11.5,
+          color:theme.t3, display:"flex", alignItems:"center", gap:7,
+          height:16,
+        }}>
+          {!done
+            ? <><span className="spDot" style={{
+                width:5, height:5, borderRadius:"50%",
+                background:theme.acc, display:"inline-block",
+              }}/>{status}</>
+            : <><Ic.Check s={12} c={theme.acc}/>{status}</>}
+        </p>
       </div>
     </ThemeCtx.Provider>
   );
@@ -5932,6 +5974,8 @@ export default function App() {
   const [entered, setEntered] = useState(true);   // PIN qulfi olib tashlandi — doim ochiq
   const [pin, setPin] = useState(null);
   const [ready, setReady] = useState(false);
+  // ochilish ekranidagi bosqich: 0 telegram · 1 sozlamalar · 2 kartalar · 3 tayyor
+  const [bootStage, setBootStage] = useState(0);
   // ochilish animatsiyasi — kamida SPLASH_MIN ko'rinib turadi.
   // Aks holda ilova 1 kadrda ochilib, animatsiya ko'rinmasdi.
   const [introDone, setIntroDone] = useState(false);
@@ -6045,6 +6089,7 @@ export default function App() {
       // (request timeout). Endi mahalliy ma'lumot tiklangan zahoti
       // oynani ochamiz, server esa fon bilan tekshiriladi.
       setReady(true);
+      setBootStage(1);          // endi sozlamalar yuklanmoqda
 
       // ── 3. FONDA server bilan sinxronlash ──
       // Sozlamalarni serverdan olishni shu yerga, verify BILAN
@@ -6077,6 +6122,7 @@ export default function App() {
           cfgServer.current = pickCfg(next);
           setCfg(c => ({ ...c, ...next }));
         }
+        setBootStage(2);          // endi kartalar yuklanmoqda
 
         const raw = localStorage.getItem("premolux_v1");
         const d = raw ? JSON.parse(raw) : null;
@@ -6107,6 +6153,7 @@ export default function App() {
         const realPeople = await api.get("/people");
         if (Array.isArray(realPeople)) setPeople(realPeople);
       } catch (e) { logErr("boot/people", e); }
+      finally { setBootStage(3); }
     })();
   },[]);
 
@@ -6241,7 +6288,7 @@ export default function App() {
 
   // ochilish ekrani: ma'lumat tayyor bo'lishi KUTILADI va kamida
   // SPLASH_MIN ko'rinib turadi — keyin puflab o'chadi
-  if (!ready || !introDone) return <Splash theme={theme} done={ready && introDone}/>;
+  if (!ready || !introDone) return <Splash theme={theme} done={ready && introDone} stage={bootStage}/>;
 
   return (
     <ThemeCtx.Provider value={theme}>

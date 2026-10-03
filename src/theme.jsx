@@ -162,26 +162,53 @@ export const Css = ({ theme }) => {
       font-family:inherit; font-weight:700; letter-spacing:-0.01em; }
     .linkBtn:active{ transform:scale(.985); }
 
-    /* ── ochilish ekrani ── */
+    /* ── ochilish ekrani ──
+       Bosqichma-bosqich paydo bo'ladi (stagger), chiziq o'zini
+       chizadi, progress yumshoq yug'uradi — shu uchun "professional"
+      hissi chiqadi. */
     @keyframes splashGlow{
-      0%,100%{ transform:scale(1);   opacity:.75 }
-      50%    { transform:scale(1.14); opacity:1   }
+      0%,100%{ transform:scale(1);    opacity:.55 }
+      50%    { transform:scale(1.18); opacity:.9  }
     }
-    @keyframes splashPop{
-      0%  { transform:scale(.72) rotate(-8deg); opacity:0 }
-      55% { transform:scale(1.08) rotate(2deg);  opacity:1 }
-      100%{ transform:scale(1) rotate(0);       opacity:1 }
+    @keyframes splashBadge{
+      0%  { transform:scale(.86) rotate(-4deg); opacity:0 }
+      60% { transform:scale(1.03) rotate(1deg); opacity:1 }
+      100%{ transform:scale(1) rotate(0);        opacity:1 }
+    }
+    @keyframes splashDraw{
+      0%  { stroke-dashoffset:var(--len); opacity:0 }
+      12% { opacity:1 }
+      100%{ stroke-dashoffset:0;          opacity:1 }
     }
     @keyframes splashRise{
-      0%  { transform:translateY(10px); opacity:0 }
+      0%  { transform:translateY(12px); opacity:0 }
       100%{ transform:translateY(0);    opacity:1 }
     }
-    @keyframes splashTag{
-      0%,100%{ opacity:.45 } 50%{ opacity:.9 }
+    @keyframes splashFade{
+      0%  { opacity:0 } 100%{ opacity:1 }
     }
-    .splashMark{ animation:splashPop .62s cubic-bezier(.2,1.3,.35,1) both }
-    .splashTag { animation:splashRise .5s .1s cubic-bezier(.2,.9,.3,1) both,
-                         splashTag 2.2s .6s ease-in-out infinite }
+    @keyframes splashDot{
+      0%,100%{ transform:scale(.7); opacity:.35 }
+      50%    { transform:scale(1);  opacity:1  }
+    }
+    @keyframes splashShine{
+      0%  { transform:translateX(-120%) }
+      100%{ transform:translateX(320%) }
+    }
+    @keyframes splashTrack{
+      0%  { transform:scaleX(0) }
+      100%{ transform:scaleX(1) }
+    }
+    .spBadge{ animation:splashBadge .7s cubic-bezier(.2,1.25,.35,1) both }
+    .spDraw { animation:splashDraw .78s .18s cubic-bezier(.35,0,.2,1) both }
+    .spName { animation:splashRise .55s .3s cubic-bezier(.2,.9,.3,1) both }
+    .spTag  { animation:splashFade  .6s .46s both }
+    .spTrack{ animation:splashTrack .5s .56s cubic-bezier(.3,.9,.3,1) both;
+              transform-origin:left center }
+    .spBar  { transition:width .45s cubic-bezier(.3,.9,.3,1) }
+    .spDot  { animation:splashDot 1.5s ease-in-out infinite }
+    .spStatus{ animation:splashFade .4s both }
+    .spShine{ animation:splashShine 1.9s cubic-bezier(.4,0,.5,1) infinite }
 
     /* ── klaviatura fokusi ──
        Oldin butun ilovada :focus-visible yo'q edi: klaviatura bilan

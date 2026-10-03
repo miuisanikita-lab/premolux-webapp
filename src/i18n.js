@@ -552,7 +552,11 @@ const uz = {
   "set.nErrNote": "Xato yuz berganda",
 
   // ── ochilish ekrani ──
-  "splash.tag":        "ochilish ekrani",
+  "splash.tag": "Premium avtomatlashtirish",
+  "splash.s1": "Telegram ulanmoqda",
+  "splash.s2": "Sozlamalar yuklanmoqda",
+  "splash.s3": "Kartalar yuklanmoqda",
+  "splash.s4": "Tayyor",
 
   "common.copying": "Nusxalanmoqda...",
   "cards.localSaved": "Mahalliy saqlandi",
@@ -1101,7 +1105,11 @@ const ru = {
   "set.nErrNote": "При возникновении ошибки",
 
   // ── ochilish ekrani ──
-  "splash.tag":        "загрузка",
+  "splash.tag": "Автоматизация Premium",
+  "splash.s1": "Подключение к Telegram",
+  "splash.s2": "Загрузка настроек",
+  "splash.s3": "Загрузка карт",
+  "splash.s4": "Готово",
 
   "common.copying": "Копирование...",
   "cards.localSaved": "Сохранено локально",
@@ -1650,7 +1658,11 @@ const en = {
   "set.nErrNote": "When something fails",
 
   // ── ochilish ekrani ──
-  "splash.tag":        "loading",
+  "splash.tag": "Premium automation",
+  "splash.s1": "Connecting to Telegram",
+  "splash.s2": "Loading settings",
+  "splash.s3": "Loading cards",
+  "splash.s4": "Ready",
 
   "common.copying": "Copying...",
   "cards.localSaved": "Saved on this device",

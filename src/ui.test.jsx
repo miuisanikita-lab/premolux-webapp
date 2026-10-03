@@ -64,6 +64,32 @@ describe("ErrorBoundary", () => {
     await act(async () => { root.unmount(); });
   });
 
+  // ── OCHILISH EKRANI ──
+  it("splash: belgi, nom, progress va holat qatori bor", async () => {
+    localStorage.setItem("premolux_v1", JSON.stringify({ lang:"uz", role:"owner" }));
+    const { el, root } = await mount(<App />);
+    const t = el.textContent.replace(/\s+/g, " ");
+    expect(t).toMatch(/PremoLux/);
+    expect(t).toMatch(/Premium avtomatlashtirish/);   // mikro-yorliq
+    // holat qatori — bosqich bo'yicha o'zgaradi (test muhitida
+    // so'rovlar darhol tugab ketadi, shuning uchun oxirgi bosqich
+    // ko'rinishi mumkin)
+    expect(t).toMatch(/Telegram ulanmoqda|Sozlamalar yuklanmoqda|Kartalar yuklanmoqda|Tayyor/);
+    expect(el.querySelector(".spDot")).toBeTruthy();            // pulsatsiya nuqtasi
+    expect(el.querySelector("svg path[style*='--len']")).toBeTruthy();  // chiziladigan yulduz
+    await act(async () => { root.unmount(); });
+  }, 20000);
+
+  it("splash: 2.9 sekunddan keyin butunlay yo'qoladi", async () => {
+    localStorage.setItem("premolux_v1", JSON.stringify({ lang:"uz", role:"owner" }));
+    const { el, root } = await mount(<App />);
+    await act(async () => { await new Promise(r => setTimeout(r, 2900)); });
+    expect(el.textContent).not.toMatch(/Premium avtomatlashtirish/);   // splash yo'qoldi
+    // asosiy ilova ochildi — pastki menyu ko'rinadi
+    expect(el.querySelectorAll("nav button").length).toBeGreaterThanOrEqual(5);
+    await act(async () => { root.unmount(); });
+  }, 20000);
+
   it("ilova 1.8 s ichida oqiladi (qulf kabi uzoq turmaydi)", async () => {
     localStorage.setItem("premolux_v1", JSON.stringify({ lang: "uz", role: "owner" }));
     const { el, root, text } = await mount(<App />);
