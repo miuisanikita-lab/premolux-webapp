@@ -579,6 +579,8 @@ const uz = {
   "set.restoreUndoNote": "Ma'lumotlar tiklandi. Avvalgi holatga qaytmoqchimisiz?",
   "set.restoreUndo": "Eski holatga qaytarish",
   "set.restoreReverted": "Eski holatga qaytarildi",
+
+  "crash.history": "Xatolar tarixi",
 };
 
 const ru = {
@@ -1126,6 +1128,8 @@ const ru = {
   "set.restoreUndoNote": "Данные восстановлены. Вернуть прежнее состояние?",
   "set.restoreUndo": "Вернуть как было",
   "set.restoreReverted": "Прежнее состояние восстановлено",
+
+  "crash.history": "История ошибок",
 };
 
 const en = {
@@ -1673,6 +1677,8 @@ const en = {
   "set.restoreUndoNote": "Data has been restored. Go back to how it was?",
   "set.restoreUndo": "Go back",
   "set.restoreReverted": "Previous state restored",
+
+  "crash.history": "Error history",
 };
 
 export const DICT = { uz, ru, en };
