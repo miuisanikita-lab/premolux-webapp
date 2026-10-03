@@ -553,6 +553,19 @@ const uz = {
 
   // ── ochilish ekrani ──
   "splash.tag":        "ochilish ekrani",
+
+  "common.copying": "Nusxalanmoqda...",
+  "cards.localSaved": "Mahalliy saqlandi",
+  "cards.syncFailed": "Serverga yuborilmadi — qayta urinib ko'ring",
+  "cards.syncPending": "Serverga yuborilmoqda",
+  "cards.syncOk": "Serverga saqlandi",
+  "cards.retrySync": "Qayta yuborish",
+
+  "cards.personHint": "Ism familiya. Keyin bank va kartalar shu shaxs ostiga qo'shiladi.",
+  "bankm.add": "Bank qo'shish",
+
+  "cardm.hint": "16 ta raqam, muddat va CVV kiriting",
+  "cardm.hintReady": "Hammasi to'ldi — saqlashingiz mumkin",
 };
 
 const ru = {
@@ -1074,6 +1087,19 @@ const ru = {
 
   // ── ochilish ekrani ──
   "splash.tag":        "загрузка",
+
+  "common.copying": "Копирование...",
+  "cards.localSaved": "Сохранено локально",
+  "cards.syncFailed": "Не отправлено на сервер — попробуйте снова",
+  "cards.syncPending": "Отправляется на сервер",
+  "cards.syncOk": "Сохранено на сервере",
+  "cards.retrySync": "Отправить снова",
+
+  "cards.personHint": "Имя и фамилия. Затем банки и карты добавляются к этому клиенту.",
+  "bankm.add": "Добавить банк",
+
+  "cardm.hint": "Введите 16 цифр, срок и CVV",
+  "cardm.hintReady": "Всё заполнено — можно сохранять",
 };
 
 const en = {
@@ -1595,6 +1621,19 @@ const en = {
 
   // ── ochilish ekrani ──
   "splash.tag":        "loading",
+
+  "common.copying": "Copying...",
+  "cards.localSaved": "Saved on this device",
+  "cards.syncFailed": "Not sent to the server — try again",
+  "cards.syncPending": "Sending to server",
+  "cards.syncOk": "Saved on server",
+  "cards.retrySync": "Send again",
+
+  "cards.personHint": "First and last name. Then add banks and cards under this customer.",
+  "bankm.add": "Add bank",
+
+  "cardm.hint": "Enter the 16 digits, expiry and CVV",
+  "cardm.hintReady": "All filled in — you can save",
 };
 
 export const DICT = { uz, ru, en };

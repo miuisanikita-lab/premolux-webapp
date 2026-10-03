@@ -5157,6 +5157,42 @@ const Stamp = ({ text, tone, animate }) => (
 );
 
 // ── KARTA: BIR TAPDA AG'DARILADI ──────────
+// ── to'liq karta ma'lumotlari (faqat xotirada, localStorage'da EMAS) ──
+const SECRETS = new Map();
+
+const rememberSecret = (id, num, cvv, exp, name) => {
+  if (!id) return;
+  SECRETS.set(id, { num:(num||"").replace(/\s/g,""), cvv:cvv||"", exp:exp||"", name:name||"" });
+};
+const moveSecret = (from, to, card) => {
+  if (SECRETS.has(from)) { SECRETS.set(to, SECRETS.get(from)); SECRETS.delete(from); }
+  else if (card?.num) rememberSecret(to, card.num, card.cvv, card.exp, card.name);
+};
+const forgetSecret = id => SECRETS.delete(id);
+
+// Niqoblangan raqam ("8600 •••• •••• 1234") bo'lsa — to'liqini olish uchun
+// serverga so'ramiz. Endpoint yo'q bo'lsa, ko'rsatilgan qiymat qaytariladi.
+const fullValue = async (card, field) => {
+  const cached = SECRETS.get(card.id);
+  if (cached) {
+    const v = cached[field === "cvv" ? "cvv" : field === "exp" ? "exp" : "num"];
+    if (v) return v;
+  }
+  const shown = field === "cvv" ? card.cvv : field === "exp" ? card.exp : card.num;
+  const masked = /[•*•]/.test(shown || "") || /\*{2,}/.test(shown || "");
+  if (!masked) return shown || "";
+
+  // serverdan so'rashga urinib ko'ramiz
+  try {
+    const full = await api.get(`/cards/${card.id}/secret`);
+    if (full && !/[•*•]/.test(full[field] || "")) {
+      rememberSecret(card.id, full.num, full.cvv, full.exp, full.name);
+      return full[field] || "";
+    }
+  } catch {}
+  return shown || "";
+};
+
 const copyText = async (txt) => {
   try { await navigator.clipboard.writeText(txt); return true; }
   catch {
@@ -5169,16 +5205,30 @@ const copyText = async (txt) => {
   }
 };
 
-const CopyField = ({ label, value, mono=true, grow, tone, wide }) => {
+// Har bir maydon ALOHIDA nusxalanadi: karta raqami bosilsa — to'liq
+// 16 ta raqam, CVV bosilsa — to'liq CVV. Ko'rsatilgan niqoblangan
+// qiymat emas, haqiqiy qiymat nusxalanadi.
+const CopyField = ({ label, value, mono=true, grow, tone, wide, card, field }) => {
   const th = useTheme();
   const [hit,sHit] = useState(false);
+  const [busy,sBusy] = useState(false);
+  const doCopy = async () => {
+    if (busy) return;
+    const text = card && field ? await fullValue(card, field) : value;
+    if (!text) return;
+    sBusy(true);
+    const ok = await copyText(text);
+    sBusy(false);
+    if (ok) { hap.ok(); sHit(true); setTimeout(()=>sHit(false), 1200); }
+    else hap.err();
+  };
   return (
     <button
       onTouchStart={e=>e.stopPropagation()} onTouchEnd={e=>e.stopPropagation()} onTouchMove={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} onMouseUp={e=>e.stopPropagation()}
+      aria-label={`${label} — ${t("common.copy")}`}
       onClick={async e=>{
         e.stopPropagation();
-        const ok = await copyText(value);
-        if (ok) { hap.ok(); sHit(true); setTimeout(()=>sHit(false), 1200); }
+        await doCopy();
       }}
       style={{
         flex: grow ? 1 : "none", minWidth:0, textAlign:"left",
@@ -5193,7 +5243,7 @@ const CopyField = ({ label, value, mono=true, grow, tone, wide }) => {
       <span style={{ flex:1, minWidth:0 }}>
         <span style={{ display:"block", fontSize:8, fontWeight:700, letterSpacing:"0.14em",
           color: hit ? th.ok : th.t4, textTransform:"uppercase", marginBottom:2 }}>
-          {hit ? "Nusxalandi" : label}
+          {busy ? <><Ic.Spin s={9} c={th.t4}/>{" "}{t("common.copying")}</> : hit ? t("common.copied") : label}
         </span>
         <span style={{ display:"block",
           fontFamily: mono ? "'SF Mono','Fira Code',monospace" : "inherit",
@@ -5202,8 +5252,8 @@ const CopyField = ({ label, value, mono=true, grow, tone, wide }) => {
           color: hit ? th.ok : (tone || th.t1),
           overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{value}</span>
       </span>
-      {hit
-        ? <Ic.Check s={13} c={th.ok}/>
+      {busy ? <Ic.Spin s={13} c={th.t3}/>
+        : hit ? <Ic.Check s={13} c={th.ok}/>
         : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={th.t3} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
             <rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/>
           </svg>}
@@ -5279,7 +5329,7 @@ const CardFlip = ({ card, children, masked }) => {
             <Ic.Lock s={15} c={th.t4}/>
             <span>{t("set.maskPanNote")}</span>
           </div>
-        : <CopyField label={t("card.flip.number")} value={card.num} grow wide/>}
+        : <CopyField label={t("card.flip.number")} value={card.num} card={card} field="num" grow wide/>}
             {/* ortga qaytarish */}
             <button
               onTouchStart={e=>e.stopPropagation()} onTouchEnd={e=>e.stopPropagation()} onTouchMove={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} onMouseUp={e=>e.stopPropagation()}
@@ -5300,8 +5350,8 @@ const CardFlip = ({ card, children, masked }) => {
           </div>
 
           <div style={{ display:"flex", gap:7 }}>
-            {!masked && <CopyField label={t("card.flip.cvv")}    value={card.cvv} tone={b.c}/>}
-            <CopyField label={t("card.flip.exp")} value={card.exp}/>
+            {!masked && <CopyField label={t("card.flip.cvv")}    value={card.cvv} card={card} field="cvv" tone={b.c}/>}
+            <CopyField label={t("card.flip.exp")} value={card.exp} card={card} field="exp"/>
             <CopyField label={t("card.flip.owner")}  value={card.name} mono={false} grow/>
           </div>
         </div>
@@ -5323,9 +5373,40 @@ const Conf=({title,desc,onOk,onClose})=>{
 };
 
 const BankM=({onAdd,onClose})=>{
+  const th=useTheme();
   const [n,sN]=useState("");const[e,sE]=useState("");
   const go=()=>{if(!n.trim()){sE(t("bankm.needName"));return;}onAdd(n.trim());onClose();};
-  return <Modal onClose={onClose}><MH title={t("bankm.title")} onClose={onClose}/><div style={{ padding:18,display:"flex",flexDirection:"column",gap:11 }}><div><Lbl>{t("cardm.bankName")}</Lbl><input value={n} onChange={e=>sN(e.target.value)} placeholder="Kapitalbank" autoFocus onKeyDown={e=>e.key==="Enter"&&go()} style={{ fontWeight:500,fontSize:16 }}/></div><Err msg={e}/><Btn onClick={go} full sz="lg">{n.trim()?`${n} →`:t("bankm.needName")}</Btn></div></Modal>;
+  return <Modal onClose={onClose}><MH title={t("bankm.title")} onClose={onClose}/>
+    <div style={{ padding:18,display:"flex",flexDirection:"column",gap:13 }}>
+      <div style={{ display:"flex",gap:11 }}>
+        <span style={{
+          width:40, height:40, borderRadius:12, flexShrink:0,
+          background:th.accSub, border:`1px solid ${th.accBd}`,
+          display:"flex", alignItems:"center", justifyContent:"center",
+        }}><Ic.Wallet s={19} c={th.acc}/></span>
+        <div style={{ flex:1, minWidth:0 }}>
+          <Lbl>{t("cardm.bankName")}</Lbl>
+          <input value={n} onChange={e=>{sN(e.target.value);sE("");}} placeholder="Kapitalbank"
+            autoFocus maxLength={32} onKeyDown={e=>e.key==="Enter"&&go()}
+            style={{ fontWeight:500,fontSize:16 }}/>
+        </div>
+      </div>
+      <Err msg={e}/>
+      {/* tez tanlash — eng ko'p ishlatiladigan banklar bir bosishda */}
+      <div style={{ display:"flex",flexWrap:"wrap",gap:6 }}>
+        {BL.slice(0,8).map(b=>
+          <button key={b.id} onClick={()=>{sN(b.name);sE("");}} style={{
+            padding:"6px 10px", borderRadius:9, cursor:"pointer", fontFamily:"inherit",
+            fontSize:11.5, fontWeight:600,
+            background: n.trim()===b.name ? th.accSub : th.s1,
+            border:`1px solid ${ n.trim()===b.name ? th.accBd : th.b1}`,
+            color: n.trim()===b.name ? th.acc : th.t2,
+          }}>{b.name}</button>)}
+      </div>
+      <Btn onClick={go} full sz="lg" disabled={!n.trim()}>
+        <Ic.Check s={14} c={th.accTxt}/>{t("bankm.add")}
+      </Btn>
+    </div></Modal>;
 };
 
 const CardM=({pN,bN,onAdd,onClose})=>{
@@ -5334,6 +5415,8 @@ const CardM=({pN,bN,onAdd,onClose})=>{
   const [f,sF]=useState({name:pN?.toUpperCase()||"",num:"",exp:"",cvv:""});const[er,sE]=useState("");
   const up=(k,v)=>sF(p=>({...p,[k]:v}));
   const fN=v=>v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
+  const digits = f.num.replace(/\D/g,"").length;
+  const ready = digits>=16 && f.exp.length>=5 && f.cvv.length>=3 && !!f.name.trim();
   const fE=v=>{const c=v.replace(/\D/g,"").slice(0,4);return c.length>=2?c.slice(0,2)+"/"+c.slice(2):c;};
   const go=()=>{
     if(f.num.replace(/\s/g,"").length<16){sE(t("cardm.errNum"));return;}
@@ -5345,18 +5428,39 @@ const CardM=({pN,bN,onAdd,onClose})=>{
   };
   return <Modal onClose={onClose}><MH title={t("cardm.title")} sub={`${pN} · ${bN}`} onClose={onClose}/>
     <div style={{ padding:18,display:"flex",flexDirection:"column",gap:12,maxHeight:"65vh",overflowY:"auto" }}>
-      <div style={{ height:72,borderRadius:11,padding:"10px 14px",background:`linear-gradient(130deg,${b.c||"#fff"}14,rgba(0,0,0,0.35))`,border:`1px solid ${b.c||"#888"}1a`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+      <div style={{
+        height:78, borderRadius:13, padding:"11px 15px",
+        background:`linear-gradient(130deg, ${b.c||"#fff"}1a, rgba(0,0,0,0.4))`,
+        border:`1px solid ${b.c||"#888"}26`,
+        display:"flex", alignItems:"center", justifyContent:"space-between",
+        boxShadow:`inset 0 1px 0 rgba(255,255,255,0.06)`,
+      }}>
         <div><p style={{ fontSize:8,color:b.c||th.t2,fontWeight:700,letterSpacing:"0.12em",marginBottom:3 }}>{bN?.toUpperCase()}</p><p style={{ fontFamily:"monospace",fontSize:12,fontWeight:700,letterSpacing:"1.5px" }}>{f.num||"•••• •••• •••• ••••"}</p></div>
         <div style={{ textAlign:"right" }}><p style={{ fontSize:10,fontWeight:600 }}>{f.name||"—"}</p><p style={{ fontFamily:"monospace",fontSize:10,color:th.t3,marginTop:1 }}>{f.exp||"MM/YY"}</p></div>
       </div>
       <div><Lbl>{t("cardm.name")}</Lbl><input value={f.name} onChange={e=>up("name",e.target.value.toUpperCase())} placeholder={t("cardm.phName")} style={{ fontWeight:600 }}/></div>
-      <div><Lbl>{t("cardm.num")}</Lbl><input value={f.num} onChange={e=>up("num",fN(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19} style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,letterSpacing:"1.5px" }}/></div>
+      <div>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <Lbl>{t("cardm.num")}</Lbl>
+          <span style={{ fontSize:10.5, fontWeight:700, letterSpacing:"0.02em",
+            color: digits>=16 ? th.ok : th.t4 }}>
+            {digits}/16
+          </span>
+        </div>
+        <input value={f.num} onChange={e=>up("num",fN(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19}
+          inputMode="numeric"
+          style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,letterSpacing:"1.5px",
+            borderColor: digits>=16 ? th.ok+"66" : undefined }}/>
+      </div>
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:9 }}>
         <div><Lbl>{t("cardm.exp")}</Lbl><input value={f.exp} onChange={e=>up("exp",fE(e.target.value))} placeholder="MM/YY" maxLength={5} style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,textAlign:"center" }}/></div>
         <div><Lbl>{t("cardm.cvv")}</Lbl><input value={f.cvv} onChange={e=>up("cvv",e.target.value.replace(/\D/g,"").slice(0,3))} placeholder="•••" maxLength={3} type="password" style={{ fontFamily:"monospace",fontSize:18,fontWeight:800,textAlign:"center",letterSpacing:"4px" }}/></div>
       </div>
       <Err msg={er}/>
-      <Btn onClick={go} full sz="lg"><Ic.Check/>{t("cardm.save")}</Btn>
+      <Btn onClick={go} full sz="lg" disabled={!ready}><Ic.Check/>{t("cardm.save")}</Btn>
+      <p style={{ fontSize:11, color:th.t4, textAlign:"center", marginTop:-4 }}>
+        {ready ? t("cardm.hintReady") : t("cardm.hint")}
+      </p>
     </div>
   </Modal>;
 };
@@ -5377,34 +5481,58 @@ const CardsPage=()=>{
   const gBs=p=>{const cs=p?.cards||[];const ns=[...new Set(cs.map(gBN))];return ns.map(n=>({n,bid:BL.find(b=>b.name===n)?.id||n,cards:cs.filter(x=>gBN(x)===n)}));};
   const bc=(P.find(p=>p.id===c.pid)?.cards||[]).filter(x=>gBN(x)===c.bn);
   const pers=P.find(p=>p.id===c.pid);
-  const addP=async()=>{
-    if(!nn.trim()){sNE(t("cards.needName"));return;}
-    if(P.find(p=>p.name.toLowerCase()===nn.toLowerCase())){sNE(t("cards.nameExists"));return;}
-    try {
-      const saved = await api.post("/people", { name: nn.trim() });
-      sP(p=>[...p, saved]);
-      hap.ok(); toast({kind:"ok",title:t("cards.personAdded"),note:nn.trim()});
-      sNN(""); sA(false); sNE("");
-    } catch (e) {
-      hap.err(); sNE(e.message || t("cards.cardSaveErr"));
-    }
+  // shaxs qo'shish — darhol, server kutmaydi
+  const addP = () => {
+    const name = nn.trim();
+    if(!name){sNE(t("cards.needName"));return;}
+    if(P.find(p=>p.name.toLowerCase()===name.toLowerCase())){sNE(t("cards.nameExists"));return;}
+
+    const tmpId = "tmp_" + Date.now().toString(36);
+    const local = { id: tmpId, name, cards: [], syncing: true };
+    sP(p=>[...p, local]);              // ro'yxatda darhol ko'rinadi
+    hap.ok();
+    sNN(""); sA(false); sNE("");
+
+    // serverga fon bilan — xato bo'lsa ham shaxs yo'qolmaydi
+    api.post("/people", { name }).then(saved=>{
+      sP(p=>p.map(x=>x.id===tmpId
+        ? { ...saved, cards: x.cards || [], syncing:false }
+        : x));
+      toast({kind:"ok",title:t("cards.personAdded"),note:name});
+    }).catch(e=>{
+      sP(p=>p.map(x=>x.id===tmpId ? { ...x, syncing:false, syncError:e.message } : x));
+      hap.err();
+      toast({kind:"warn",title:t("cards.localSaved"),note:t("cards.syncFailed"),ms:4000});
+    });
   };
   const addB=n=>{const pid=c.pid;sM(null);setTimeout(()=>push({v:"c",pid,bn:n}),80);};
-  const addC=async(card)=>{
-    // MUHIM: to'liq karta raqami/CVV hech qachon mahalliy holatda
-    // saqlanmaydi — faqat backend'ga yuboriladi, backend esa faqat
-    // NIQOBLANGAN raqamni qaytaradi, shuni saqlaymiz.
-    try {
-      const saved = await api.post(`/people/${c.pid}/cards`, card);
-      sP(p=>p.map(x=>x.id===c.pid?{...x,cards:[...(x.cards||[]),saved]}:x));
-      sFresh(saved.id); setTimeout(()=>sFresh(null),1500); hap.ok();
-      toast({kind:"ok",title:t("cards.cardAdded"),note:`•••• ${card.num.replace(/\s/g,"").slice(-4)}`});
-    } catch (e) {
-      hap.err();
-      toast({kind:"err",title:t("cards.cardSaveErr"),note:e.message});
-    }
-  };
-  const delC=id=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:(x.cards||[]).filter(k=>k.id!==id)}:x));api.del(`/cards/${id}`).catch(()=>{});};
+const addC = card => {
+  // MUHIM: to'liq raqam/CVV localStorage'ga YOZILMAYDI (masih
+  // localSecret qutisi orqali faqat xotirada saqlanadi) — serverga
+  // yuboriladi va nusxalash uchun xotirada qoladi.
+  const tmpId = "tmpc_" + Date.now().toString(36);
+  const clean = { ...card, id: tmpId, syncing: true };
+  rememberSecret(card.id || tmpId, card.num, card.cvv, card.exp, card.name);
+
+  sP(p=>p.map(x=>x.id===c.pid?{...x,cards:[...(x.cards||[]),clean]}:x));
+  sFresh(tmpId); setTimeout(()=>sFresh(null),1500); hap.ok();
+  sM(null);
+  toast({kind:"ok",title:t("cards.cardAdded"),note:`•••• ${card.num.replace(/\s/g,"").slice(-4)}`});
+
+  api.post(`/people/${c.pid}/cards`, card).then(saved=>{
+    sP(p=>p.map(x=>x.id===c.pid
+      ? { ...x, cards:(x.cards||[]).map(k=>k.id===tmpId ? { ...saved, syncing:false } : k) }
+      : x));
+    moveSecret(tmpId, saved.id, card);
+  }).catch(e=>{
+    sP(p=>p.map(x=>x.id===c.pid
+      ? { ...x, cards:(x.cards||[]).map(k=>k.id===tmpId ? { ...k, syncing:false, syncError:e.message } : k) }
+      : x));
+    hap.err();
+    toast({kind:"warn",title:t("cards.localSaved"),note:t("cards.syncFailed"),ms:4000});
+  });
+};
+  const delC=id=>{forgetSecret(id);sP(p=>p.map(x=>x.id===c.pid?{...x,cards:(x.cards||[]).filter(k=>k.id!==id)}:x));api.del(`/cards/${id}`).catch(()=>{});};
   const delPerson=id=>{sP(p=>p.filter(x=>x.id!==id));api.del(`/people/${id}`).catch(()=>{});};
   const delB=n=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:(x.cards||[]).filter(k=>gBN(k)!==n)}:x));pop();};
   const allCards=P.flatMap(p=>p.cards||[]);
@@ -5434,8 +5562,28 @@ const CardsPage=()=>{
           <StatCard label={t("cards.statEnded")} value={String(lim)} color={lim?th.err:th.t3}/>
         </div>
         {add&&<div style={{ ...glass(th,0.05),borderRadius:12,padding:14,display:"flex",flexDirection:"column",gap:9,border:"1px solid rgba(255,159,10,0.18)" }}>
-          <div style={{ display:"flex",gap:9 }}><input value={nn} onChange={e=>sNN(e.target.value)} placeholder={t("cards.phPerson")} autoFocus onKeyDown={e=>e.key==="Enter"&&addP()} style={{ fontWeight:500 }}/><Btn onClick={addP} style={{ whiteSpace:"nowrap" }}>{t("cards.create")}</Btn></div>
+          <div style={{
+            display:"flex", gap:9, padding:"11px 12px", borderRadius:14,
+            background:th.s1, border:`1px solid ${ne ? th.err+"55" : th.b1}`,
+            transition:"border-color .2s",
+          }}>
+            <span style={{
+              width:32, height:32, borderRadius:10, flexShrink:0,
+              background:th.accSub, border:`1px solid ${th.accBd}`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+            }}><Ic.User s={15} c={th.acc}/></span>
+            <input value={nn} onChange={e=>{sNN(e.target.value);sNE("");}}
+              placeholder={t("cards.phPerson")} autoFocus maxLength={40}
+              onKeyDown={e=>e.key==="Enter"&&addP()}
+              style={{ flex:1, minWidth:0, fontWeight:500 }}/>
+            <Btn onClick={addP} disabled={!nn.trim()} style={{ whiteSpace:"nowrap" }}>
+              <Ic.Check s={13} c={th.accTxt}/>{t("cards.create")}
+            </Btn>
+          </div>
           <Err msg={ne}/>
+          <p style={{ fontSize:11, color:th.t4, paddingLeft:3, marginTop:-2 }}>
+            {t("cards.personHint")}
+          </p>
         </div>}
         <div style={{ display:"flex",flexDirection:"column",gap:7 }}>
           {P.map(p=>{const bks=gBs(p);return(
