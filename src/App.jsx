@@ -5633,8 +5633,8 @@ const PinGate = ({ saved, onSet, onOpen }) => {
 
   const title = mode==="create" ? t("pin.create")
               : mode==="repeat" ? t("pin.repeat") : t("pin.enter");
-  const note  = mode==="create" ? t("ob.note2")
-              : mode==="repeat" ? t("ob.note2b")
+  const note  = mode==="create" ? t("pin.createNote")
+              : mode==="repeat" ? t("pin.repeatNote")
               : t("pin.note");
 
   const merging = phase!=="idle";
@@ -5775,34 +5775,19 @@ const OnboardHead = ({ n, title, note, msg }) => {
 // ═════════════════════════════════════════
 const Onboarding = ({ codes, onJoin }) => {
   const th = useTheme();
-  const [step,sStep] = useState("channel");   // channel | pin | code | done
+  const [step,sStep] = useState("channel");   // channel | code | done
   // har bir kanal/guruh uchun alohida holat: idle | wait | ok
   const [chk,sChk]   = useState(() => REQUIRED_SUBS.map(() => "idle"));
-  const [pin,sPin]   = useState("");
-  const [first,sFirst]=useState("");
-  const [rep,sRep]   = useState(false);
   const [code,sCode] = useState("");
   const [msg,sMsg]   = useState("");
   const [bad,sBad]   = useState(false);
   const [seal,sSeal] = useState(false);
   const [subErr,sSubErr] = useState("");
 
-  // PIN klaviatura bilan ham kiritilishi kerak (avfaqat faqat touch ekranda
-  // ishlardi — qattiqor telefon egalari uchun qulay emas edi)
-  useEffect(()=>{
-    if (step !== "pin") return;
-    const h = e => {
-      if (/^[0-9]$/.test(e.key)) pushPin(e.key);
-      else if (e.key === "Backspace") setTimeout(()=>sPin(p=>p.slice(0,-1)), 0);
-    };
-    window.addEventListener("keydown", h);
-    return ()=>window.removeEventListener("keydown", h);
-  });
-
   // ── 1. kanal/guruh — HAQIQIY tekshiruv server orqali ──
   // Backend Telegram'da foydalanuvchi a'zoligini tekshiradi
   // (Telethon get_dialogs). Barcha kanal/guruhlarga a'zo
-  // bo'lgandagina PIN bosqichiga o'tiladi.
+  // bo'lgandagina taklif kodi bosqichiga o'tiladi.
   const check = async () => {
     sChk(c => c.map(() => "wait"));
     sSubErr("");
@@ -5812,7 +5797,7 @@ const Onboarding = ({ codes, onJoin }) => {
       if (res.ok) {
         sChk(c => c.map(() => "ok"));
         hap.ok();
-        setTimeout(()=>sStep("pin"), 900);
+        setTimeout(()=>sStep("code"), 900);
       } else {
         // hali a'zo bo'lmaganlar bor — qaysilari ekanini ko'rsatamiz
         const missing = (res.missing || []).map(m => m.replace(/^@/, "").toLowerCase());
@@ -5832,26 +5817,13 @@ const Onboarding = ({ codes, onJoin }) => {
     }
   };
 
-  // ── 2. PIN ──
-  const pushPin = d => {
-    if (pin.length>=4) return;
-    const nx = pin + d; sPin(nx); sMsg("");
-    if (nx.length<4) return;
-    setTimeout(()=>{
-      if (!rep) { hap.select(); sFirst(nx); sPin(""); sRep(true); }
-      else if (nx===first) { hap.ok(); sStep("code"); sPin(nx); }
-      else { hap.err(); sMsg(t("ob.mismatch")); sBad(true); sRep(false); sFirst("");
-             setTimeout(()=>{ sBad(false); sPin(""); }, 540); }
-    }, 170);
-  };
-
-  // ── 3. taklif kodi ──
+  // ── 2. taklif kodi ──
   const submit = () => {
     const c = code.trim().toUpperCase();
     const inv = codes.find(x=>x.code===c);
     if (!inv) { hap.err(); sMsg(t("ob.badCode")); sBad(true); setTimeout(()=>sBad(false),540); return; }
     hap.ok(); sSeal(true); sMsg("");
-    setTimeout(()=>onJoin(inv, first || pin), 1500);
+    setTimeout(()=>onJoin(inv, ""), 1500);
   };
 
   const fmt = v => {
@@ -5942,32 +5914,6 @@ const Onboarding = ({ codes, onJoin }) => {
           </div>
         )}
 
-        {/* ── PIN ── */}
-        {step==="pin" && (
-          <div className="stepIn">
-            <OnboardHead n={2} title={rep ? t("ob.title2b") : t("ob.title2")}
-              note={rep ? t("ob.note2b") : t("ob.note2")}/>
-            <div className={bad?"shakeX":undefined} style={{ position:"relative", height:48,
-              display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
-              {[0,1,2,3].map(i=>{
-                const on = pin.length>i;
-                return (
-                  <span key={i} style={{
-                    width:15, height:15, borderRadius:"50%", margin:"0 13px",
-                    background: on ? (bad?th.err:th.acc) : "transparent",
-                    border:`1.6px solid ${on ? (bad?th.err:th.acc) : th.b2}`,
-                    boxShadow: on && !bad ? `0 0 12px ${th.acc}55` : "none",
-                    transition:"all .2s",
-                  }}>
-                    {on && <span className="dotIn" style={{ display:"block", width:"100%", height:"100%", borderRadius:"50%" }}/>}
-                  </span>
-                );
-              })}
-            </div>
-            <Pad onKey={pushPin} onBack={()=>sPin(p=>p.slice(0,-1))}/>
-          </div>
-        )}
-
         {/* ── KOD ── */}
         {step==="code" && (
           <div className="stepIn">
@@ -5989,7 +5935,7 @@ const Onboarding = ({ codes, onJoin }) => {
               </div>
             ) : (
               <>
-                <OnboardHead n={3} title={t("ob.title3")}
+                <OnboardHead n={2} title={t("ob.title3")}
                   note={t("ob.note3")}/>
                 <div className={bad?"shakeX":undefined} style={{ marginBottom:14 }}>
                   <input value={code} onChange={e=>sCode(fmt(e.target.value))}
@@ -6371,8 +6317,7 @@ export default function App() {
       {!role && (
         <div className={cfg.calm ? "calm" : undefined}>
         <Onboarding codes={codes}
-          onJoin={(inv, code)=>{
-            setPin(code);
+          onJoin={(inv)=>{
             const me = window.Telegram?.WebApp?.initDataUnsafe?.user;
             const nm = me ? [me.first_name, me.last_name].filter(Boolean).join(" ") : "Yangi foydalanuvchi";
             setCodes(l=>l.map(x=>x.code===inv.code?{...x,used:true,usedBy:nm}:x));   // bir martalik
