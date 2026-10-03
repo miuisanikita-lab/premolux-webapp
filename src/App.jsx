@@ -6165,7 +6165,14 @@ export default function App() {
           // 428 (sub_required) HAR DOIM ishlashi kerak —
           // foydalanuvchi kanal/guruhdan chiqib ketgan bo'lsa,
           // keyingi ochilishda ham Onboarding ko'rsatiladi.
+          // Bu xato EMAS — toast ko'rsatilmaydi.
           if (e.status === 428 && e.code === "sub_required") {
+            setRole(null);
+            return;
+          }
+          // 401/403 — ro'yxatdan o'tmagan yoki imzo noto'g'ri.
+          // Bu ham xato EMAS — Onboarding ko'rsatiladi.
+          if (e.status === 401 || e.status === 403) {
             setRole(null);
             return;
           }
@@ -6174,10 +6181,6 @@ export default function App() {
           if (e.code === "NETWORK" || e.code === "TIMEOUT") {
             setTimeout(()=>pushToast({ kind:"warn", title:t("net.serverDown"),
               note:t("net.serverDownNote"), ms:3400 }), 900);
-          } else if (e.status === 401 || e.status === 403) {
-            // Telegram ichida ochilishi kerak — brauzerda initData bo'lmaydi
-            setTimeout(()=>pushToast({ kind:"err", title:t("net.telegramOnly"),
-              note:t("net.telegramOnlyNote"), ms:4200 }), 900);
           }
         });
 
