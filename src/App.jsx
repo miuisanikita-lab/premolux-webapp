@@ -1716,6 +1716,8 @@ const OrdersPage = () => {
 //   2) MOCK — false qilinadi, fetch haqiqiy so'rov yuboradi
 
 const API_BASE = "https://premolux-beckend.onrender.com";
+// WebSocket manzili (backend /ws/orders/{id} endi token talab qiladi)
+const WS_BASE = API_BASE.replace(/^http/, "ws");
 const MOCK = false;                // backend ulandi
 
 class ApiError extends Error {
@@ -2440,6 +2442,79 @@ const PremiumPage = ({ goto }) => {
 
   const pollStop = useRef(null);
 
+  // ══════════════════════════════════════════════════════════
+  // REAL VAQT: WebSocket (polling o'rniga)
+  // ══════════════════════════════════════════════════════════
+  // Backendda /ws/orders/{orderId} bor va har bir Lane holati
+  // o'zgarganda DARHOL xabar beradi. Polling (har 1.5 s so'rov)
+  // o'rniga endi shu ishlaydi — kamroq yuk, tezroq javob.
+  //
+  // MUHIM: backend endi autentifikatsiya talab qiladi —
+  // ?token=<initData> (brauzer WebSocket ga header qo'sha olmaydi).
+  // Token yo'q bo'lsa yoki server rad etsa — eski usulga
+  // (polling) QAYTAMIZ, ya'ni ilova hech qachon jonli qolmaydi.
+  const wsRef = useRef(null);
+
+  // serverdan kelgan holatni ekranga ko'chirish.
+  // true = barcha lane tugadi (yoki hech qanday lane yo'q)
+  const applyRemote = (lanesRemote, L, pid2, bumpFn) => {
+    setLanes(prev => prev.map((l, idx) => {
+      const remote = lanesRemote?.[idx];
+      if (!remote) return l;
+      const failed = ["failed","login_failed","waiting_stuck"].includes(remote.status);
+      return {
+        ...l,
+        num: remote.phoneNumber || l.num,
+        step: STATUS_STEP[remote.status] ?? l.step,
+        failed,
+      };
+    }));
+
+    const allDone = (lanesRemote || []).every(l =>
+      ["confirmed","failed","login_failed","waiting_stuck"].includes(l.status));
+    if (!allDone || !lanesRemote?.length) return false;
+
+    lanesRemote.forEach((remote, idx) => {
+      if (remote.status !== "confirmed") return;
+      hap.ok(); bumpFn?.();
+      const cid = L[idx]?.cardId;
+      if (!cid) return;
+      setPeople(list => list.map(pr => pr.id===pid2 ? {
+        ...pr, cards: (pr.cards||[]).map(cd => cd.id===cid ? { ...cd, used:(cd.used||0)+1 } : cd)
+      } : pr));
+    });
+
+    // buyurtma tugadi — saqlangan "faol buyurtma"ni tozalaymiz
+    try { localStorage.removeItem("premolux_active_order"); } catch {}
+    return true;
+  };
+
+  const startWs = (orderId, L, pid2, onDone) => {
+    const token = window.Telegram?.WebApp?.initData;
+    if (!token || typeof WebSocket === "undefined") return false;
+
+    let ws;
+    try {
+      ws = new WebSocket(`${WS_BASE}/ws/orders/${orderId}?token=${encodeURIComponent(token)}`);
+    } catch { return false; }
+    wsRef.current = ws;
+
+    ws.onmessage = ev => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      if (!Array.isArray(msg?.lanes)) return;
+      if (applyRemote(msg.lanes, L, pid2, bump)) onDone?.();
+    };
+
+    // ulanish uzilsa yoki server rad etsa — polling'ga qaytamiz
+    ws.onerror = () => {};
+    ws.onclose = () => {
+      if (wsRef.current === ws) wsRef.current = null;
+      startPolling(orderId, L, pid2);
+    };
+    return true;
+  };
+
   const startPolling = (orderId, L, pid2) => {
     // avvalgi tsiklni to'xtatamiz — aks holda har sahifaga kirgan
     // o'ta bitta so'rovlar ketma-ket yug'ib, eski holat ustiga yozadi
@@ -2453,36 +2528,7 @@ const PremiumPage = ({ goto }) => {
 
         if (cancelled) return;
 
-        sLanes(prev => prev.map((l, idx) => {
-          const remote = data?.lanes?.[idx];
-          if (!remote) return l;
-          const failed = ["failed","login_failed","waiting_stuck"].includes(remote.status);
-          return {
-            ...l,
-            num: remote.phoneNumber || l.num,
-            step: STATUS_STEP[remote.status] ?? l.step,
-            failed,
-          };
-        }));
-
-        const allDone = (data?.lanes || []).every(l =>
-          ["confirmed","failed","login_failed","waiting_stuck"].includes(l.status)
-        );
-
-        if (allDone && data?.lanes?.length) {
-          data.lanes.forEach((remote, idx) => {
-            if (remote.status === "confirmed") {
-              hap.ok(); bump?.();
-              const cid = L[idx]?.cardId;
-              if (cid) {
-                setPeople(list => list.map(pr => pr.id===pid2 ? {
-                  ...pr, cards: (pr.cards||[]).map(cd => cd.id===cid ? { ...cd, used:(cd.used||0)+1 } : cd)
-                } : pr));
-              }
-            }
-          });
-          // MUHIM: buyurtma tugadi — saqlangan "faol buyurtma"ni tozalaymiz
-          try { localStorage.removeItem("premolux_active_order"); } catch {}
+        if (applyRemote(data?.lanes, L, pid2, bump)) {
           clearTimeout(timer);
           return;
         }
@@ -2496,7 +2542,11 @@ const PremiumPage = ({ goto }) => {
   };
 
   // sahifa yopilganda tsikl to'xtaydi
-  useEffect(() => () => { pollStop.current?.(); pollStop.current = null; }, []);
+  useEffect(() => () => {
+    pollStop.current?.(); pollStop.current = null;
+    try { wsRef.current?.close(); } catch {}
+    wsRef.current = null;
+  }, []);
 
   // MUHIM: sahifadan chiqib qaytilganda (yoki yangilanganda) FAOL
   // buyurtma bo'lsa — TIKLAYMIZ, "shaxs tanlash"ga qaytarib
@@ -2512,7 +2562,8 @@ const PremiumPage = ({ goto }) => {
     sPid(saved.personId);
     sLanes(saved.lanes);
     sStep(4);
-    startPolling(saved.orderId, saved.lanes, saved.personId);
+    if (!startWs(saved.orderId, saved.lanes, saved.personId))
+      startPolling(saved.orderId, saved.lanes, saved.personId);
   }, []);
 
   const launch = async () => {
@@ -2542,6 +2593,8 @@ const PremiumPage = ({ goto }) => {
     sLanes(L);
     sStep(4);
     hap.heavy();
+    // real vaqt kanalini ochamiz (backend rad etsa — polling'ga qaytamiz)
+    if (!startWs(orderId, L, pid2)) startPolling(orderId, L, pid2);
     toast({kind:"info",title:t("premium.started",{n:L.length}),note:who?.name,ms:3200});
 
     if (!orderId) return;
@@ -5177,7 +5230,11 @@ const fullValue = async (card, field) => {
       rememberSecret(card.id, full.num, full.cvv, full.exp, full.name);
       return full[field] || "";
     }
-  } catch {}
+  } catch (e) {
+    // 403 = "Raqamni yashirish" sozlamasi yoqiq: to'liq raqamni
+    // faqat EGASI ko'ra oladi. Boshqa holda hech narsa qaytarilmaydi.
+    if (e.status === 403) return "";
+  }
   return shown || "";
 };
 
