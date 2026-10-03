@@ -3,7 +3,6 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "framework": "vite",
-  "public": true,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
