@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, createContext, useContext, Component } from "react";
 import { LANGS, t, tp, tArray, setLang as setLangGlobal, getLang } from "./i18n";
+// sof mantiq — testlanadigan yordamchilar core.js da
+import {
+  som, last4, dayKey, last, bumpDay, cardHealth,
+  DEFAULT_CARD_CAP, maskTail, isMasked, makeBackup, readBackup,
+} from "./core";
 
 // ─────────────────────────────────────────────
 // THEME SYSTEM
@@ -850,7 +855,10 @@ const Btn = ({ children, onClick, v="primary", sz="md", full, disabled, style={}
     danger:   { background:h?"rgba(255,69,58,0.18)":"rgba(255,69,58,0.1)", color:th.err, border:"1px solid rgba(255,69,58,0.2)" },
     outline:  { background:"transparent", color:th.t1, border:`1px solid ${h?th.b3:th.b2}` },
   };
-  return <button onClick={disabled?undefined:(e)=>{hap.tap();onClick?.(e);}} onMouseEnter={()=>sH(true)} onMouseLeave={()=>sH(false)}
+  // DIQQAT: avval `disabled` atributi qo'yilmagandi — faqat bosish
+  // bekor qilinardi. Natijada tugma fokuslanadigan, bosiladigan va
+  // ekran o'quvchiga "yoqiq" deb aytilmaydigan bo'lib qolardi.
+  return <button disabled={disabled} type="button" onClick={disabled?undefined:(e)=>{hap.tap();onClick?.(e);}} onMouseEnter={()=>sH(true)} onMouseLeave={()=>sH(false)}
     style={{ display:"inline-flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:600,letterSpacing:"-0.01em",border:"none",cursor:disabled?"not-allowed":"pointer",transition:"all .17s cubic-bezier(.2,0,0,1)",width:full?"100%":undefined,opacity:disabled?.35:1,...S[sz],...V[v],...style }}>
     {children}
   </button>;
@@ -1263,7 +1271,8 @@ const ProfilePage = ({ themeId, setThemeId, lang, onLang }) => {
   const langLabel = LANGS.find(l=>l.id===lang)?.label;
 
   if (view === "settings")
-    return <SettingsPage onBack={()=>sView("main")} themeId={themeId} setThemeId={setThemeId}/>;
+    return <SettingsPage onBack={()=>sView("main")} themeId={themeId} setThemeId={setThemeId}
+                     lang={lang} setLang={onLang}/>;
 
   if (view === "app")
     return (
@@ -3060,8 +3069,6 @@ const PartnerRow = ({ p, workers }) => {
 const cntOf = (p, workers) =>
   (p.today || 0) + workers.filter(w=>w.parent===p.id).reduce((a,w)=>a + (w.today||0), 0);
 const dueOf = (p, workers) => cntOf(p, workers) * (p.price || 0);
-const som = n => (n||0).toLocaleString("ru-RU");
-const last4 = num => (num || "").replace(/\s/g,"").slice(-4);
 
 const PAY_FROM = 22, PAY_TO = 23;
 const inPayWindow = () => { const h = new Date().getHours(); return h >= PAY_FROM && h < PAY_TO; };
@@ -3779,8 +3786,6 @@ const AppSheet = () => {
 // ═════════════════════════════════════════
 // STATISTIKA
 // ═════════════════════════════════════════
-const dayKey = (d=new Date()) =>
-  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
 const shiftDay = (n) => { const d = new Date(); d.setDate(d.getDate()+n); return d; };
 const WD = ["Yak","Du","Se","Cho","Pay","Ju","Sha"];
@@ -3929,7 +3934,6 @@ const StatsPage = () => {
   const [per,sPer] = useState("day");   // day | week | month
 
   const today = hist.find(x=>x.d===dayKey()) || { d:dayKey(), n:0, h:Array(24).fill(0) };
-  const last  = (k) => hist.slice(-k);
 
   // davr ma'lumoti
   const view = (() => {
@@ -4790,7 +4794,8 @@ const HoldBtn = ({ label, done, tone, disabled }) => {
 // ═════════════════════════════════════════
 // SOZLAMALAR
 // ═════════════════════════════════════════
-const SettingsPage = ({ onBack, themeId, setThemeId }) => {
+const SettingsPage = (props) => {
+  const { onBack, lang, setLang: onLang, themeId, setThemeId } = props;
   const th    = useTheme();
   const toast = useToast();
   const { cfg, setCfg, people=[], bots=[], setPeople, setBots, setAccount, role, setRole, setPin,
@@ -5080,33 +5085,10 @@ const Empty = ({ art="folder", title, note, action, onAction }) => {
 // ═════════════════════════════════════════
 // KARTA SALOMATLIGI
 // ═════════════════════════════════════════
-const CAP = 3;                       // bitta kartadan nechta premium
+const CAP = DEFAULT_CARD_CAP;       // bitta kartadan nechta premium (core.js)
 
 const seenLimit = new Set();         // muhr faqat bir marta urilsin
 
-const cardHealth = (c) => {
-  const cap  = c.limit || CAP;
-  const used = Math.min(cap, c.used || 0);
-  const left = cap - used;
-
-  let expired = false, soon = false;
-  const m = /^(\d{2})\/(\d{2})$/.exec(c.exp || "");
-  if (m) {
-    const mm = +m[1], yy = 2000 + +m[2];
-    const end = new Date(yy, mm, 0, 23, 59, 59);      // oyning oxirgi kuni
-    const now = new Date();
-    expired = end < now;
-    soon = !expired && (end - now) < 1000*60*60*24*75; // ~2.5 oy
-  }
-
-  const state = expired ? "expired"
-              : left <= 0 ? "limit"
-              : soon ? "soon"
-              : used === 0 ? "fresh"
-              : "active";
-
-  return { cap, used, left, state, expired, soon };
-};
 
 const HEALTH_META = (th) => ({
   fresh:   { tone: th.ok,   key: "health.fresh" },
@@ -6531,7 +6513,7 @@ export default function App() {
 
   const [cfg, setCfg] = useState({
     streams:8, retry:1, cardCap:3,
-    pin:false, maskPan:true,
+    maskPan:true,
     nOk:true, nLimit:true, nErr:true, daily:false, dailyAt:21,
     haptic:true, calm:false,
   });

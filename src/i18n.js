@@ -566,6 +566,19 @@ const uz = {
 
   "cardm.hint": "16 ta raqam, muddat va CVV kiriting",
   "cardm.hintReady": "Hammasi to'ldi — saqlashingiz mumkin",
+
+  "set.restore": "Zaxiradan tiklash",
+  "set.restoreNote": "Oldingi zaxira faylini tanlang (JSON)",
+  "set.restoreOk": "Zaxira tiklandi",
+  "set.restoreOkNote": "{p} shaxs · {c} karta tiklandi",
+  "set.restoreErr": "Tiklanmadi",
+  "set.restoreBad.parse": "Fayl JSON emas yoki buzilgan",
+  "set.restoreBad.shape": "Fayl ichidagi ma'lumot noto'g'ri",
+  "set.restoreBad.version": "Bu eski versiya fayli",
+  "set.restoreUndoTitle": "Tiklashni bekor qilish",
+  "set.restoreUndoNote": "Ma'lumotlar tiklandi. Avvalgi holatga qaytmoqchimisiz?",
+  "set.restoreUndo": "Eski holatga qaytarish",
+  "set.restoreReverted": "Eski holatga qaytarildi",
 };
 
 const ru = {
@@ -1100,6 +1113,19 @@ const ru = {
 
   "cardm.hint": "Введите 16 цифр, срок и CVV",
   "cardm.hintReady": "Всё заполнено — можно сохранять",
+
+  "set.restore": "Восстановить из копии",
+  "set.restoreNote": "Выберите файл старой резервной копии (JSON)",
+  "set.restoreOk": "Резервная копия восстановлена",
+  "set.restoreOkNote": "Восстановлено клиентов: {p} · карт: {c}",
+  "set.restoreErr": "Не удалось восстановить",
+  "set.restoreBad.parse": "Файл не JSON или повреждён",
+  "set.restoreBad.shape": "Данные в файле некорректны",
+  "set.restoreBad.version": "Файл старой версии",
+  "set.restoreUndoTitle": "Отменить восстановление",
+  "set.restoreUndoNote": "Данные восстановлены. Вернуть прежнее состояние?",
+  "set.restoreUndo": "Вернуть как было",
+  "set.restoreReverted": "Прежнее состояние восстановлено",
 };
 
 const en = {
@@ -1634,6 +1660,19 @@ const en = {
 
   "cardm.hint": "Enter the 16 digits, expiry and CVV",
   "cardm.hintReady": "All filled in — you can save",
+
+  "set.restore": "Restore from backup",
+  "set.restoreNote": "Pick a previous backup file (JSON)",
+  "set.restoreOk": "Backup restored",
+  "set.restoreOkNote": "Restored {p} customers · {c} cards",
+  "set.restoreErr": "Couldn't restore",
+  "set.restoreBad.parse": "The file isn't JSON or is corrupted",
+  "set.restoreBad.shape": "The data inside the file is invalid",
+  "set.restoreBad.version": "This is an older version file",
+  "set.restoreUndoTitle": "Undo the restore",
+  "set.restoreUndoNote": "Data has been restored. Go back to how it was?",
+  "set.restoreUndo": "Go back",
+  "set.restoreReverted": "Previous state restored",
 };
 
 export const DICT = { uz, ru, en };
