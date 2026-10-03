@@ -2036,13 +2036,6 @@ const SwipeRow = ({ children, onDelete, label, disabled }) => {
   };
 
   // tugma orqali o'chirish — surish bilan bir xil natija
-  const kill = () => {
-    if (disabled || dying) return;
-    hap.heavy(); sArm(false); armR.current = false;
-    sDying(true); sDx(0);
-    setTimeout(onDelete, 210);
-  };
-
   const p = Math.min(1, Math.abs(dx)/FULL);
 
   return (
@@ -2079,22 +2072,6 @@ const SwipeRow = ({ children, onDelete, label, disabled }) => {
           <Ic.Trash s={15} c={th.err}/>
         </span>
       </div>
-
-      {/* o'chirish tugmasi: avval faqat chapga surish mumkin edi —
-          sichqoncha yoki klaviatura bilan o'chirib bo'lmasdi */}
-      {!disabled && (
-        <button
-          onClick={kill} aria-label={`${label || t("common.delete")} — ${t("common.delete")}`}
-          style={{
-            position:"absolute", zIndex:3, top:"50%", right:6, transform:"translateY(-50%)",
-            width:34, height:34, borderRadius:10, cursor:"pointer",
-            background:`${th.err}14`, border:`1px solid ${th.err}33`, color:th.err,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            opacity: dx > 4 ? 0 : .55, pointerEvents: dx > 4 ? "none" : "auto",
-            transition:"opacity .18s",
-            WebkitTapHighlightColor:"transparent",
-          }}><Ic.Trash s={15} c={th.err}/></button>
-      )}
 
       <div className="swipeRow"
         role="group" aria-label={label || t("common.delete")}
