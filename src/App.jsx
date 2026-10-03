@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { LANGS, t, tp, tArray, setLang as setLangGlobal, getLang } from "./i18n";
 
 // ─────────────────────────────────────────────
 // THEME SYSTEM
@@ -952,22 +953,16 @@ const Row = ({ icon, title, sub, onClick, right }) => {
 };
 
 // ── PROFIL SAHIFASI ───────────────────────
-const LANGS = [
-  { id:"uz", flag:"🇺🇿", label:"O'zbek"  },
-  { id:"ru", flag:"🇷🇺", label:"Русский" },
-  { id:"en", flag:"🇬🇧", label:"English" },
-];
-
-const ProfilePage = ({ themeId, setThemeId }) => {
+const ProfilePage = ({ themeId, setThemeId, lang, onLang }) => {
   const th = useTheme();
   const [view,sView] = useState("main");
   const [sheet,sS] = useState(null);
-  const [lang,sL]  = useState("uz");
+  const sL = l => onLang(l);
   const [copied,sC]= useState(false);
 
   const tg   = typeof window!=="undefined" ? window.Telegram?.WebApp : null;
   const me   = tg?.initDataUnsafe?.user;
-  const name = me ? [me.first_name, me.last_name].filter(Boolean).join(" ") : "Mehmon";
+  const name = me ? [me.first_name, me.last_name].filter(Boolean).join(" ") : t("prof.guest");
   const uid  = me?.id ? String(me.id) : "—";
 
   const copyId = () => {
@@ -984,7 +979,7 @@ const ProfilePage = ({ themeId, setThemeId }) => {
   if (view === "app")
     return (
       <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
-        <button onClick={()=>sView("main")} aria-label="Orqaga" style={{
+        <button onClick={()=>sView("main")} aria-label={t("common.back")} style={{
           width:34, height:34, borderRadius:10, cursor:"pointer", alignSelf:"flex-start",
           background:th.s1, border:`1px solid ${th.b1}`, color:th.t2,
           display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -1021,20 +1016,20 @@ const ProfilePage = ({ themeId, setThemeId }) => {
 
       {/* Qatorlar */}
       <div style={{ display:"flex",flexDirection:"column",gap:9 }}>
-        <Row icon={<Ic.Cog s={19} c={th.t2}/>} title="Sozlamalar" sub="Limitlar, xavfsizlik, bildirishnoma"
+        <Row icon={<Ic.Cog s={19} c={th.t2}/>} title={t("prof.settings")} sub={t("prof.settingsSub")}
              onClick={()=>sView("settings")}/>
-        <Row icon={<Ic.Send s={19} c={th.t2}/>} title="Ilova" sub="SMS ulagich — bank kodlarini avtomatlashtiradi"
+        <Row icon={<Ic.Send s={19} c={th.t2}/>} title={t("prof.app")} sub={t("prof.appSub")}
              onClick={()=>sView("app")}/>
-        <Row icon={<Ic.Globe s={19} c={th.t2}/>} title="Ilova tili" sub={langLabel} onClick={e=>{markOrigin(e);sS("lang");}}/>
-        <Row icon={<Ic.Help  s={19} c={th.t2}/>} title="Qo'llab-quvvatlash" onClick={e=>{markOrigin(e);sS("help");}}/>
-        <Row icon={<Ic.Info  s={19} c={th.t2}/>} title="Ilova haqida" onClick={e=>{markOrigin(e);sS("about");}}/>
-        <Row icon={<Ic.Theme s={19} c={th.t2}/>} title="Mavzuni o'zgartirish"
-             sub={{amoled:"Qora",stitch:"To'q ko'k",light:"Yorug'"}[themeId]} onClick={e=>{markOrigin(e);sS("theme");}}/>
+        <Row icon={<Ic.Globe s={19} c={th.t2}/>} title={t("prof.lang")} sub={langLabel} onClick={e=>{markOrigin(e);sS("lang");}}/>
+        <Row icon={<Ic.Help  s={19} c={th.t2}/>} title={t("prof.help")} onClick={e=>{markOrigin(e);sS("help");}}/>
+        <Row icon={<Ic.Info  s={19} c={th.t2}/>} title={t("prof.about")} onClick={e=>{markOrigin(e);sS("about");}}/>
+        <Row icon={<Ic.Theme s={19} c={th.t2}/>} title={t("prof.theme")}
+             sub={{amoled:t("prof.themeDark"),stitch:t("prof.themeBlue"),light:t("prof.themeLight")}[themeId]} onClick={e=>{markOrigin(e);sS("theme");}}/>
       </div>
 
       {/* ── Til ── */}
       {sheet==="lang" && (
-        <Sheet title="Ilova tili" onClose={()=>sS(null)}>
+        <Sheet title={t("prof.langTitle")} onClose={()=>sS(null)}>
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {LANGS.map(l=>{
               const on = lang===l.id;
@@ -1057,25 +1052,25 @@ const ProfilePage = ({ themeId, setThemeId }) => {
 
       {/* ── Mavzu ── */}
       {sheet==="theme" && (
-        <Sheet title="Mavzuni tanlang" onClose={()=>sS(null)}>
+        <Sheet title={t("prof.themeTitle")} onClose={()=>sS(null)}>
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {[
-              { id:"amoled", label:"Qora",      note:"AMOLED ekran uchun",  swatch:"#000000", ring:"rgba(255,255,255,0.16)" },
-              { id:"stitch", label:"To'q ko'k", note:"Yumshoq to'q fon",    swatch:"#0b1730", ring:"rgba(120,170,255,0.3)" },
-              { id:"light",  label:"Yorug'",    note:"Kunduzi qulay",       swatch:"#F4F5F7", ring:"rgba(16,19,26,0.14)" },
-            ].map(t=>{
-              const on = themeId===t.id;
+              { id:"amoled", label:t("prof.themeDark"), note:t("prof.themeAmoled"),   swatch:"#000000", ring:"rgba(255,255,255,0.16)" },
+              { id:"stitch", label:t("prof.themeBlue"), note:t("prof.themeStitch"),   swatch:"#0b1730", ring:"rgba(120,170,255,0.3)" },
+              { id:"light",  label:t("prof.themeLight"),  note:t("prof.themeLightNote"), swatch:"#F4F5F7", ring:"rgba(16,19,26,0.14)" },
+            ].map(item=>{
+              const on = themeId===item.id;
               return (
-                <button key={t.id} onClick={()=>{ hap.select(); setThemeId(t.id); sS(null); }} style={{
+                <button key={item.id} onClick={()=>{ hap.select(); setThemeId(item.id); sS(null); }} style={{
                   display:"flex",alignItems:"center",gap:12,padding:"13px 15px",borderRadius:14,cursor:"pointer",
                   background: on ? th.accSub : th.s1,
                   border:`1px solid ${on ? th.accBd : th.b1}`,
                   fontFamily:"inherit",transition:"all .15s",
                 }}>
-                  <span style={{ width:34,height:34,borderRadius:11,flexShrink:0,background:t.swatch,border:`1.5px solid ${t.ring}`,boxShadow:"inset 0 1px 0 rgba(255,255,255,0.08)" }}/>
+                  <span style={{ width:34,height:34,borderRadius:11,flexShrink:0,background:item.swatch,border:`1.5px solid ${item.ring}`,boxShadow:"inset 0 1px 0 rgba(255,255,255,0.08)" }}/>
                   <span style={{ flex:1,textAlign:"left" }}>
-                    <span style={{ display:"block",fontSize:15,fontWeight:on?600:500,color:on?th.acc:th.t1 }}>{t.label}</span>
-                    <span style={{ display:"block",fontSize:12,color:th.t3,marginTop:1 }}>{t.note}</span>
+                    <span style={{ display:"block",fontSize:15,fontWeight:on?600:500,color:on?th.acc:th.t1 }}>{item.label}</span>
+                    <span style={{ display:"block",fontSize:12,color:th.t3,marginTop:1 }}>{item.note}</span>
                   </span>
                   <Ic.Dot s={18} c={on?th.acc:th.t4} on={on}/>
                 </button>
@@ -1087,11 +1082,11 @@ const ProfilePage = ({ themeId, setThemeId }) => {
 
       {/* ── Yordam ── */}
       {sheet==="help" && (
-        <Sheet title="Qo'llab-quvvatlash"
+        <Sheet title={t("prof.helpTitle")}
           icon={<Ic.Help s={26} c={th.t2}/>}
           onClose={()=>sS(null)}>
           <p style={{ textAlign:"center",fontSize:13,color:th.t3,marginTop:-8,marginBottom:16,lineHeight:1.55 }}>
-            Savol yoki muammo bo'lsa yozing — kunning istalgan vaqtida javob beramiz.
+            {t("prof.helpNote")}
           </p>
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             <a href="tel:+998905890192" style={{ textDecoration:"none" }}>
@@ -1112,12 +1107,12 @@ const ProfilePage = ({ themeId, setThemeId }) => {
 
       {/* ── Ilova haqida ── */}
       {sheet==="about" && (
-        <Sheet title="PremoLux" icon={<Ic.Info s={26} c={th.t2}/>} onClose={()=>sS(null)}>
+        <Sheet title={t("prof.aboutTitle")} icon={<Ic.Info s={26} c={th.t2}/>} onClose={()=>sS(null)}>
           <p style={{ textAlign:"center",fontSize:13.5,color:th.t2,lineHeight:1.65,marginTop:-8,marginBottom:18 }}>
-            Telegram Premium buyurtmalarini avtomatik bajaruvchi boshqaruv paneli.
+            {t("prof.aboutText")}
           </p>
           <div style={{ display:"flex",flexDirection:"column",gap:1,borderRadius:14,overflow:"hidden",border:`1px solid ${th.b1}` }}>
-            {[["Versiya","1.0.0"],["Kanal","@PremoLux"],["Yangilangan","Avgust 2026"]].map(([k,v])=>(
+            {[[t("prof.version"),"1.0.0"],[t("prof.channel"),CHANNEL],[t("prof.updated"),"Avgust 2026"]].map(([k,v])=>(
               <div key={k} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 15px",background:th.s1 }}>
                 <span style={{ fontSize:13.5,color:th.t3 }}>{k}</span>
                 <span style={{ fontSize:13.5,fontWeight:600,color:th.t1,fontFamily:"'SF Mono','Fira Code',monospace" }}>{v}</span>
@@ -1427,7 +1422,7 @@ const MOCK = false;                // backend ulandi
 
 class ApiError extends Error {
   constructor(status, code, message) {
-    super(message || code || "Xatolik yuz berdi");
+    super(message || code || t("err.title"));
     this.status = status; this.code = code;
   }
 }
@@ -1474,7 +1469,7 @@ const request = async (path, { method="GET", body, timeout=25000 } = {}) => {
     return data;
   } catch (e) {
     clearTimeout(t);
-    if (e.name === "AbortError") throw new ApiError(0, "TIMEOUT", "Kutish vaqti tugadi");
+    if (e.name === "AbortError") throw new ApiError(0, "TIMEOUT", t("err.timeout"));
     if (e instanceof ApiError) throw e;
     throw new ApiError(0, "NETWORK", "Tarmoqqa ulanib bo'lmadi");
   }
@@ -1533,22 +1528,22 @@ const TOAST_ICON = {
   info: ({c}) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>,
 };
 
-const Toast = ({ t, onKill }) => {
+const Toast = ({ t: item, onKill }) => {
   const th = useTheme();
   const [out,sOut] = useState(false);
   const TONE = { ok:th.ok, err:th.err, warn:th.warn, info:th.acc };
-  const c = TONE[t.kind] || th.acc;
-  const Ico = TOAST_ICON[t.kind] || TOAST_ICON.info;
+  const c = TONE[item.kind] || th.acc;
+  const Ico = TOAST_ICON[item.kind] || TOAST_ICON.info;
 
   useEffect(()=>{
-    const a = setTimeout(()=>sOut(true), t.ms - 260);
-    const b = setTimeout(()=>onKill(t.id), t.ms);
+    const a = setTimeout(()=>sOut(true), item.ms - 260);
+    const b = setTimeout(()=>onKill(item.id), item.ms);
     return ()=>{ clearTimeout(a); clearTimeout(b); };
   },[]);
 
   return (
     <div className={out?"toastOut":"toastIn"}
-      onClick={()=>{ sOut(true); setTimeout(()=>onKill(t.id),240); }}
+      onClick={()=>{ sOut(true); setTimeout(()=>onKill(item.id),240); }}
       style={{
         pointerEvents:"auto", cursor:"pointer",
         display:"flex", alignItems:"center", gap:11,
@@ -1568,14 +1563,14 @@ const Toast = ({ t, onKill }) => {
       }}><Ico c={c}/></span>
 
       <span style={{ flex:1, minWidth:0 }}>
-        <span style={{ display:"block", fontSize:13.5, fontWeight:600, color:th.t1, letterSpacing:"-0.01em" }}>{t.title}</span>
-        {t.note && <span style={{ display:"block", fontSize:11.5, color:th.t3, marginTop:1.5 }}>{t.note}</span>}
+        <span style={{ display:"block", fontSize:13.5, fontWeight:600, color:th.t1, letterSpacing:"-0.01em" }}>{item.title}</span>
+        {item.note && <span style={{ display:"block", fontSize:11.5, color:th.t3, marginTop:1.5 }}>{item.note}</span>}
       </span>
 
       <span className="tBar" style={{
         position:"absolute", left:0, right:0, bottom:0, height:2,
         background:`linear-gradient(90deg, ${c}, ${c}55)`,
-        animationDuration:`${t.ms}ms`,
+        animationDuration:`${item.ms}ms`,
       }}/>
     </div>
   );
@@ -1587,7 +1582,7 @@ const ToastHost = ({ list, onKill }) => (
     display:"flex", flexDirection:"column", alignItems:"center", gap:8,
     padding:"0 16px", pointerEvents:"none",
   }}>
-    {list.map(t=><Toast key={t.id} t={t} onKill={onKill}/>)}
+    {list.map(x=><Toast key={x.id} t={x} onKill={onKill}/>)}
   </div>
 );
 
@@ -1626,7 +1621,7 @@ const OfflineBanner = () => {
         <span className={online?undefined:"dotBlink"} style={{
           width:6, height:6, borderRadius:"50%", background:"#fff" }}/>
         <span style={{ fontSize:12.5, fontWeight:700, letterSpacing:"-0.01em" }}>
-          {online ? "Qayta ulandi" : "Internet aloqasi yo'q"}
+          {online ? t("net.online") : t("net.offline")}
         </span>
       </div>
     </div>
@@ -1637,7 +1632,7 @@ const OfflineBanner = () => {
 const ErrorState = ({ err, onRetry }) => {
   const th = useTheme();
   const [busy, sBusy] = useState(false);
-  const msg = err instanceof Error ? err.message : "Nomalum xatolik";
+  const msg = err instanceof Error ? err.message : t("err.unknown");
   const isNet = err?.code === "NETWORK" || err?.code === "TIMEOUT";
 
   const retry = async () => {
@@ -1657,13 +1652,13 @@ const ErrorState = ({ err, onRetry }) => {
         <Ic.Warn s={20} c={th.err}/>
       </span>
       <p style={{ fontSize:14.5, fontWeight:700, color:th.t1 }}>
-        {isNet ? "Ulanib bo'lmadi" : "Xatolik yuz berdi"}
+        {isNet ? t("err.offline") : t("err.title")}
       </p>
       <p style={{ fontSize:12.5, color:th.t3, marginTop:6, lineHeight:1.5, maxWidth:260 }}>{msg}</p>
       {onRetry && (
         <span style={{ marginTop:16 }}>
           <Btn v="outline" sz="sm" onClick={retry} disabled={busy}>
-            {busy ? <><Ic.Spin s={12} c={th.t1}/>Qayta urinilmoqda</> : "Qayta urinish"}
+            {busy ? <><Ic.Spin s={12} c={th.t1}/>{t("common.retrying")}</> : t("common.retry")}
           </Btn>
         </span>
       )}
@@ -1697,7 +1692,7 @@ const SkelList = ({ n=3 }) => (
 // ═════════════════════════════════════════
 // CHAPGA SURIB O'CHIRISH
 // ═════════════════════════════════════════
-const SwipeRow = ({ children, onDelete, label="O'chirish", disabled }) => {
+const SwipeRow = ({ children, onDelete, label, disabled }) => {
   const th   = useTheme();
   const [dx,sDx]   = useState(0);
   const [arm,sArm] = useState(false);
@@ -1773,7 +1768,7 @@ const SwipeRow = ({ children, onDelete, label="O'chirish", disabled }) => {
           opacity: arm ? 1 : 0,
           transform:`translateX(${arm?0:10}px)`,
           transition:"opacity .18s, transform .22s cubic-bezier(.2,.9,.3,1)",
-        }}>Qo'yib yuboring</span>
+        }}>{t("common.release")}</span>
 
         <span className={arm?"revealPulse":undefined} style={{
           width:32, height:32, borderRadius:10, flexShrink:0,
@@ -1789,6 +1784,7 @@ const SwipeRow = ({ children, onDelete, label="O'chirish", disabled }) => {
       </div>
 
       <div className="swipeRow"
+        aria-label={label || t("common.delete")}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end} onTouchCancel={end}
         style={{
           transform:`translateX(${dx}px)`,
@@ -1985,7 +1981,7 @@ const Gala = ({ total, onClose }) => {
 
       <p className="rise2" style={{ animationDelay:".46s", fontSize:14, color:th.t3,
         marginTop:10, textAlign:"center", maxWidth:250, lineHeight:1.55 }}>
-        Barcha oqimlar muvaffaqiyatli yakunlandi
+        {t("gala.note")}
       </p>
 
       <span className="rise2" style={{ animationDelay:".58s", marginTop:26 }}>
@@ -1998,19 +1994,20 @@ const Gala = ({ total, onClose }) => {
 // ═════════════════════════════════════════
 // PREMIUM OLISH
 // ═════════════════════════════════════════
-const LANE_STEPS = [
-  { key:"num",   label:"Raqam",   note:"/GetNumber yuborildi" },
-  { key:"code",  label:"Kod",     note:"Get code bosildi" },
-  { key:"login", label:"Login",   note:"Hisobga kirildi" },
-  { key:"card",  label:"Karta",   note:"Forma to'ldirilmoqda" },
-  { key:"done",  label:"Premium", note:"Faollashtirildi" },
+const LANE_STEPS = () => [
+  { key:"num",   label:t("lane.num"),     note:t("lane.n1") },
+  { key:"code",  label:t("lane.code"),    note:t("lane.n2") },
+  { key:"login", label:t("lane.login"),   note:t("lane.n3") },
+  { key:"card",  label:t("lane.card"),    note:t("lane.n4") },
+  { key:"done",  label:t("lane.premium"), note:t("lane.n5") },
 ];
 
 const Lane = ({ lane }) => {
   const th = useTheme();
   const b  = gB(lane.bankId);
   const at = lane.step;
-  const done = at >= LANE_STEPS.length;
+  const STEPS = LANE_STEPS();
+  const done = at >= STEPS.length;
   const bad  = lane.failed;
 
   return (
@@ -2050,7 +2047,7 @@ const Lane = ({ lane }) => {
       </div>
 
       <div style={{ display:"flex", alignItems:"center" }}>
-        {LANE_STEPS.map((st,i)=>{
+        {STEPS.map((st,i)=>{
           const passed = i < at;
           const now    = i === at && !done && !bad;
           const tone   = bad && i===at ? th.err : passed ? th.ok : now ? th.acc : th.b2;
@@ -2072,7 +2069,7 @@ const Lane = ({ lane }) => {
       </div>
 
       <p style={{ fontSize:10.5, color: bad ? th.err : done ? th.ok : th.t3, marginTop:9 }}>
-        {bad ? "Karta rad etildi" : done ? "Premium faollashtirildi" : LANE_STEPS[at]?.note}
+        {bad ? t("lane.rejected") : done ? t("lane.activated") : STEPS[at]?.note}
       </p>
     </div>
   );
@@ -2116,7 +2113,7 @@ const PremiumPage = ({ goto }) => {
     const q = v.replace(/\D/g,"").slice(0,2);
     sWant(q);
     const num = parseInt(q||"0",10);
-    if (num > max) { hap.warn(); sWarn(`Sizda ${max} tagacha mumkin`); } else sWarn("");
+    if (num > max) { hap.warn(); sWarn(t("premium.maxOnly",{n:max})); } else sWarn("");
   };
 
   const toCards = () => {
@@ -2225,7 +2222,7 @@ const PremiumPage = ({ goto }) => {
       });
       orderId = res?.orderId;
     } catch (e) {
-      hap.err(); sLaunchErr(e.message); toast({kind:"err",title:"Ishga tushmadi",note:e.message});
+      hap.err(); sLaunchErr(e.message); toast({kind:"err",title:t("premium.flowErr"),note:e.message});
       return;
     }
 
@@ -2239,7 +2236,7 @@ const PremiumPage = ({ goto }) => {
     sLanes(L);
     sStep(4);
     hap.heavy();
-    toast({kind:"info",title:`${L.length} oqim ishga tushdi`,note:who?.name,ms:3200});
+    toast({kind:"info",title:t("premium.started",{n:L.length}),note:who?.name,ms:3200});
 
     if (!orderId) return;
 
@@ -2270,8 +2267,8 @@ const PremiumPage = ({ goto }) => {
         setTimeout(()=>sGala(lanes.length), 420);      // hammasi o'tdi — bayram
       } else {
         toast({ kind: okCount ? "warn" : "err",
-          title: `${okCount}/${lanes.length} premium olindi`,
-          note: `${lanes.length-okCount} ta karta rad etildi`, ms:3400 });
+          title: t("premium.getResult",{n:okCount,t:lanes.length}),
+          note: t("premium.rateErr",{n:lanes.length-okCount}), ms:3400 });
       }
     }
     if (!finished) told.current = false;
@@ -2280,8 +2277,8 @@ const PremiumPage = ({ goto }) => {
   if (!ready) return (
     <div style={{ display:"flex", flexDirection:"column", gap:18, maxWidth:680 }}>
       <div>
-        <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>Premium olish</h1>
-        <p style={{ fontSize:13, color:th.t3, marginTop:3 }}>Ishga tushirishdan oldin tizim sozlanishi kerak</p>
+        <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>{t("premium.h1")}</h1>
+        <p style={{ fontSize:13, color:th.t3, marginTop:3 }}>{t("premium.notReadySub")}</p>
       </div>
       <div style={{ ...glass(th,0.04), borderRadius:16, padding:"20px 18px", display:"flex", flexDirection:"column", gap:14 }}>
         <span style={{ width:46, height:46, borderRadius:14, background:`${th.warn}1a`,
@@ -2290,12 +2287,12 @@ const PremiumPage = ({ goto }) => {
         </span>
         <div>
           <p style={{ fontWeight:700, fontSize:15.5, letterSpacing:"-0.02em" }}>Tizim tayyor emas</p>
-          <p style={{ fontSize:13, color:th.t3, marginTop:4, lineHeight:1.55 }}>Quyidagilar ulanmaguncha buyurtma boshlanmaydi.</p>
+          <p style={{ fontSize:13, color:th.t3, marginTop:4, lineHeight:1.55 }}>{t("premium.notReadyNote")}</p>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {[
-            { ok: !!account,      label:"Dostup hisob",       note: account || "ulanmagan" },
-            { ok: wired.length>0, label:"Raqam beruvchi bot", note: wired.length ? wired.map(b=>b.username).join(", ") : "ulanmagan" },
+            { ok: !!account,      label:t("premium.accessAcc"), note: account || t("premium.notConn") },
+            { ok: wired.length>0, label:t("premium.numBot"),   note: wired.length ? wired.map(b=>b.username).join(", ") : t("premium.notConn") },
           ].map(x=>(
             <div key={x.label} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 13px",
               borderRadius:11, background:th.s1, border:`1px solid ${x.ok?th.ok+"33":th.b1}` }}>
@@ -2309,7 +2306,7 @@ const PremiumPage = ({ goto }) => {
             </div>
           ))}
         </div>
-        <Btn full sz="lg" onClick={()=>goto("bots")}>Botlar bo'limiga o'tish</Btn>
+        <Btn full sz="lg" onClick={()=>goto("bots")}>{t("premium.toBots")}</Btn>
       </div>
     </div>
   );
@@ -2319,22 +2316,22 @@ const PremiumPage = ({ goto }) => {
       {gala>0 && <Gala total={gala} onClose={()=>sGala(0)}/>}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
         <div>
-          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>Premium olish</h1>
+          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>{t("premium.h1")}</h1>
           <p style={{ fontSize:13, color:th.t3, marginTop:3 }}>
-            {step===1 ? "Kartalar egasini tanlang"
-             : step===2 ? "Bir vaqtda nechta bankdan olinsin?"
-             : step===3 ? "Har bank uchun kartani belgilang"
-             : "Oqimlar bir vaqtda ishlamoqda"}
+            {step===1 ? t("premium.s1")
+             : step===2 ? t("premium.s2")
+             : step===3 ? t("premium.s3")
+             : t("premium.s4")}
           </p>
         </div>
-        {step>1 && step<4 && <Btn v="ghost" sz="sm" onClick={()=>sStep(step-1)}>Orqaga</Btn>}
-        {step===4 && finished && <Btn v="ghost" sz="sm" onClick={reset}>Yangi</Btn>}
+        {step>1 && step<4 && <Btn v="ghost" sz="sm" onClick={()=>sStep(step-1)}>{t("common.back")}</Btn>}
+        {step===4 && finished && <Btn v="ghost" sz="sm" onClick={reset}>{t("premium.new")}</Btn>}
         {step===4 && !finished && (
           <Btn v="ghost" sz="sm" onClick={()=>{
             hap.warn();
-            toast({kind:"warn",title:"Bekor qilindi",note:"Boshidan boshlanadi"});
+            toast({kind:"warn",title:t("premium.cancelled"),note:t("premium.cancelledNote")});
             reset();
-          }}>Bekor qilish</Btn>
+          }}>{t("premium.cancel")}</Btn>
         )}
       </div>
 
@@ -2347,7 +2344,7 @@ const PremiumPage = ({ goto }) => {
       )}
 
       <div style={{ display:"flex", alignItems:"center" }}>
-        {["Shaxs","Miqdor","Kartalar","Ishga tushdi"].map((lb,i)=>{
+        {tArray("premium.step").map((lb,i)=>{
           const k = i+1, passed = step>k, now = step===k;
           return (
             <div key={lb} style={{ display:"flex", alignItems:"center", flex:i<3?1:"none" }}>
@@ -2374,9 +2371,9 @@ const PremiumPage = ({ goto }) => {
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {!people.some(p=>groups(p).length>0) && (
             <Empty art="card"
-              title="Tayyor karta yo'q"
-              note="Premium olish uchun kamida bitta shaxsda bo'sh limitli karta bo'lishi kerak."
-              action="Kartalarga o'tish"
+              title={t("premium.noCard")}
+              note={t("premium.noCardNote")}
+              action={t("premium.toCards")}
               onAction={()=>goto("cards")}/>
           )}
           {people.map(p=>{
@@ -2402,7 +2399,7 @@ const PremiumPage = ({ goto }) => {
                 <span style={{ flex:1, minWidth:0 }}>
                   <span style={{ display:"block", fontSize:14, fontWeight:600, letterSpacing:"-0.01em" }}>{p.name}</span>
                   <span style={{ display:"block", fontSize:11.5, color:th.t3, marginTop:2 }}>
-                    {empty ? "Bo'sh karta yo'q" : `${gs.length} bank · ${gs.reduce((a,g)=>a+g.cards.length,0)} karta`}
+                    {empty ? t("premium.noCardHere") : tp("premium.banksCards", gs.length, { m: gs.reduce((a,g)=>a+g.cards.length,0) })}
                   </span>
                 </span>
                 <span style={{ display:"flex", marginRight:2 }}>
@@ -2458,7 +2455,7 @@ const PremiumPage = ({ goto }) => {
           </div>
 
           <Btn full sz="lg" disabled={n<1} onClick={toCards}>
-            {n>0 ? `${n} ta bank — kartalarni tanlash` : "Miqdorni kiriting"}
+            {n>0 ? t("premium.pickCards",{n}) : t("premium.enterQty")}
           </Btn>
         </div>
       )}
@@ -2473,7 +2470,7 @@ const PremiumPage = ({ goto }) => {
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13.5, fontWeight:600, letterSpacing:"-0.01em" }}>{g.name}</p>
                     <p style={{ fontSize:11, color:th.t3, marginTop:1 }}>
-                      {g.cards.length>1 ? `${g.cards.length} karta — birini tanlang` : "1 karta"}
+                      {g.cards.length>1 ? t("premium.pickOne",{n:g.cards.length}) : t("premium.oneCard")}
                     </p>
                   </div>
                   {g.cards.length===1 && (
@@ -2530,10 +2527,10 @@ const PremiumPage = ({ goto }) => {
             </span>
             <div style={{ flex:1 }}>
               <p style={{ fontSize:14.5, fontWeight:700, letterSpacing:"-0.01em" }}>
-                {finished ? `${okCount}/${lanes.length} premium olindi` : `${lanes.length} oqim ishlamoqda`}
+                {finished ? t("premium.getResult",{n:okCount,t:lanes.length}) : t("premium.working",{n:lanes.length})}
               </p>
               <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>
-                {finished ? "Barcha oqimlar tugadi" : `${who?.name} · bir vaqtda`}
+                {finished ? t("premium.allEnded") : t("premium.atOnceNote",{n:who?.name})}
               </p>
             </div>
           </div>
@@ -2592,12 +2589,12 @@ const CodeCard = ({ c, onCopy, onKill }) => {
       <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:9, position:"relative" }}>
         <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase",
           color: used ? th.t4 : th.acc }}>
-          {c.kind==="partner" ? "Hamkor kodi" : "Ishchi kodi"}
+          {c.kind==="partner" ? t("team.partnerCode") : t("team.workerCode")}
         </span>
         <span style={{ flex:1 }}/>
         {used
-          ? <Tag>Ishlatilgan</Tag>
-          : <Tag v="acc">Bir martalik</Tag>}
+          ? <Tag>{t("team.used")}</Tag>
+          : <Tag v="acc">{t("team.oneTime")}</Tag>}
       </div>
 
       {/* kod */}
@@ -2617,7 +2614,7 @@ const CodeCard = ({ c, onCopy, onKill }) => {
 
       <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, position:"relative" }}>
         <span style={{ flex:1, fontSize:11, color:th.t3 }}>
-          {used ? `${c.usedBy} ishlatdi` : "Nusxalab yuboring"}
+          {used ? t("team.usedBy",{n:c.usedBy}) : t("common.copiedHint")}
         </span>
         {!used && (
           <button onClick={copy} style={{
@@ -2628,7 +2625,7 @@ const CodeCard = ({ c, onCopy, onKill }) => {
             border:`1px solid ${hit ? th.ok+"55" : th.accBd}`,
             transition:"all .2s", WebkitTapHighlightColor:"transparent",
           }}>
-            {hit ? <><Ic.Check s={12} c={th.ok}/>Nusxalandi</> : <><Ic.Copy s={12} c={th.accTxt}/>Nusxalash</>}
+            {hit ? <><Ic.Check s={12} c={th.ok}/>{t("common.copied")}</> : <><Ic.Copy s={12} c={th.accTxt}/>{t("common.copy")}</>}
           </button>
         )}
         <button onClick={e=>{ e.stopPropagation(); hap.tap(); onKill(c.code); }}
@@ -2700,7 +2697,7 @@ const WorkerRow = ({ w, owner }) => {
         <p style={{ fontSize:14, fontWeight:600, letterSpacing:"-0.01em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{w.name}</p>
         <p style={{ fontSize:11.5, color:th.t3, marginTop:2, fontFamily:"'SF Mono',monospace" }}>{w.tag}</p>
         <p style={{ fontSize:10.5, color:w.online?th.ok:th.t4, marginTop:3 }}>
-          {owner ? `${owner} · ` : ""}{w.online ? "Faol" : w.last}
+          {owner ? `${owner} · ` : ""}{w.online ? t("bots.active") : w.last}
         </p>
       </div>
 
@@ -2710,7 +2707,7 @@ const WorkerRow = ({ w, owner }) => {
         <p style={{ fontSize:19, fontWeight:800, fontFamily:"'SF Mono',monospace", letterSpacing:"-0.02em" }}>
           <Count value={w.today}/>
         </p>
-        <p style={{ fontSize:9, color:th.t3, letterSpacing:"0.08em", textTransform:"uppercase" }}>bugun</p>
+        <p style={{ fontSize:9, color:th.t3, letterSpacing:"0.08em", textTransform:"uppercase" }}>{t("common.today")}</p>
       </div>
 
       <Donut pct={w.ok} color={w.ok>=90?th.ok:w.ok>=80?th.warn:th.err} track={th.b1}/>
@@ -2740,14 +2737,14 @@ const PartnerRow = ({ p, workers }) => {
 
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:9 }}>
         <div>
-          <p style={{ fontSize:9, color:th.t3, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:4 }}>Balans</p>
+          <p style={{ fontSize:9, color:th.t3, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:4 }}>{t("team.balance")}</p>
           <p style={{ fontSize:20, fontWeight:800, fontFamily:"'SF Mono',monospace", letterSpacing:"-0.03em" }}>
             <Count value={num}/><span style={{ fontSize:11, fontWeight:500, color:th.t3, marginLeft:4 }}>so'm</span>
           </p>
         </div>
         <div style={{ textAlign:"right" }}>
-          <p style={{ fontSize:11.5, color:th.t2, fontFamily:"'SF Mono',monospace" }}>{p.orders} buyurtma</p>
-          <p style={{ fontSize:11, color:th.t3, marginTop:2 }}>{mine.length} ishchi</p>
+          <p style={{ fontSize:11.5, color:th.t2, fontFamily:"'SF Mono',monospace" }}>{t("team.ordersCount",{n:p.orders})}</p>
+          <p style={{ fontSize:11, color:th.t3, marginTop:2 }}>{tp("team.workerCount", mine.length)}</p>
         </div>
       </div>
 
@@ -2808,7 +2805,7 @@ const PayPanel = ({ partners, workers, onClose }) => {
           background: open ? th.warn : th.t4, boxShadow: open ? `0 0 8px ${th.warn}` : "none" }}/>
         <span style={{ flex:1, fontSize:10, fontWeight:700, letterSpacing:"0.13em",
           textTransform:"uppercase", color: open ? th.warn : th.t3 }}>
-          {open ? "To'lov oynasi ochiq" : "To'lov oynasi yopiq"}
+          {open ? t("pay.windowOpen") : t("pay.windowShut")}
         </span>
         <span style={{ fontFamily:"'SF Mono','Fira Code',monospace", fontSize:13, fontWeight:700,
           color: open ? th.warn : th.t2, fontVariantNumeric:"tabular-nums" }}>
@@ -2818,25 +2815,25 @@ const PayPanel = ({ partners, workers, onClose }) => {
 
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", gap:12, marginBottom:14 }}>
         <div>
-          <p style={{ fontSize:9.5, color:th.t3, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>Bugun jami</p>
+          <p style={{ fontSize:9.5, color:th.t3, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:5 }}>{t("pay.todayTotal")}</p>
           <p style={{ fontSize:27, fontWeight:800, fontFamily:"'SF Mono',monospace", letterSpacing:"-0.03em", lineHeight:1 }}>
             <Count value={due}/><span style={{ fontSize:12, fontWeight:500, color:th.t3, marginLeft:5 }}>so'm</span>
           </p>
         </div>
         <div style={{ textAlign:"right" }}>
-          <p style={{ fontSize:12, color:th.t2, fontFamily:"'SF Mono',monospace" }}>{cnt} premium</p>
-          <p style={{ fontSize:11, color:th.t3, marginTop:3 }}>{partners.length} hamkor</p>
+          <p style={{ fontSize:12, color:th.t2, fontFamily:"'SF Mono',monospace" }}>{t("pay.premiumCount",{n:cnt})}</p>
+          <p style={{ fontSize:11, color:th.t3, marginTop:3 }}>{t("pay.partnerCount",{n:partners.length})}</p>
         </div>
       </div>
 
       <p style={{ fontSize:11, color:th.t3, marginBottom:11, lineHeight:1.5 }}>
         {open
-          ? "To'lov qabul qilingach sanoq nolga tushadi va yangi kun boshlanadi."
-          : `Oyna ${PAY_FROM}:00 da ochiladi — ${left()} qoldi. Zarur bo'lsa hozir ham yopish mumkin.`}
+          ? t("pay.openNote")
+          : t("pay.shutNote",{h:PAY_FROM,t:left()})}
       </p>
 
       <HoldBtn tone={open ? th.warn : th.t3}
-        label={due ? `Bosib turing — ${som(due)} so'm qabul qilindi` : "Yopish uchun hisob yo'q"}
+        label={due ? t("pay.accept",{n:som(due)}) : t("pay.noAccount")}
         done={()=>{ if(due) onClose(); }}/>
     </div>
   );
@@ -2871,14 +2868,14 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom: edit ? 12 : 0 }}>
             <div style={{ flex:1 }}>
               <p style={{ fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.12em",
-                textTransform:"uppercase", marginBottom:5 }}>1 premium narxi</p>
+                textTransform:"uppercase", marginBottom:5 }}>{t("ps.price")}</p>
               <p style={{ fontSize:22, fontWeight:800, fontFamily:"'SF Mono',monospace",
                 letterSpacing:"-0.03em", color:th.acc }}>
                 {som(p.price)}<span style={{ fontSize:11, fontWeight:500, color:th.t3, marginLeft:4 }}>so'm</span>
               </p>
             </div>
             {!edit && (
-              <Btn v="ghost" sz="sm" onClick={()=>{ sVal(String(p.price||0)); sEdit(true); }}>O'zgartirish</Btn>
+              <Btn v="ghost" sz="sm" onClick={()=>{ sVal(String(p.price||0)); sEdit(true); }}>{t("ps.priceEdit")}</Btn>
             )}
           </div>
 
@@ -2902,8 +2899,8 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
                 ))}
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                <Btn v="ghost" onClick={()=>sEdit(false)}>Bekor</Btn>
-                <Btn onClick={save}><Ic.Check s={13} c={th.accTxt}/>Saqlash</Btn>
+                <Btn v="ghost" onClick={()=>sEdit(false)}>{t("common.cancel")}</Btn>
+                <Btn onClick={save}><Ic.Check s={13} c={th.accTxt}/>{t("common.save")}</Btn>
               </div>
             </div>
           )}
@@ -2913,7 +2910,7 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
         <div style={{ padding:"14px 15px", borderRadius:15, background:th.s1,
           border:`1px solid ${due ? th.warn+"3d" : th.b1}` }}>
           <p style={{ fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.12em",
-            textTransform:"uppercase", marginBottom:11 }}>Bugungi hisob</p>
+            textTransform:"uppercase", marginBottom:11 }}>{t("ps.todayBill")}</p>
 
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
             <span style={{ fontFamily:"'SF Mono',monospace", fontSize:15, fontWeight:700, color:th.t1 }}>{cnt}</span>
@@ -2925,21 +2922,21 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
           </div>
 
           <HoldBtn tone={th.warn}
-            label={due ? `Bosib turing — ${som(due)} qabul qilindi` : "Hisob yo'q"}
+            label={due ? t("ps.accept",{n:som(due)}) : t("ps.noBill")}
             done={()=>{ if(due){ onSettle(p.id); onClose(); } }}/>
         </div>
 
         {/* ── KO'RSATKICHLAR ── */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
-          <StatCard label="Bugun"    value={String(cnt)} color={th.acc}/>
-          <StatCard label="Ishchi"   value={`${online}/${mine.length}`} color={online?th.ok:th.t3}/>
-          <StatCard label="Ulush"    value={`${p.share}%`}/>
+          <StatCard label={t("ps.statToday")}    value={String(cnt)} color={th.acc}/>
+          <StatCard label={t("ps.statWorker")}   value={`${online}/${mine.length}`} color={online?th.ok:th.t3}/>
+          <StatCard label={t("ps.statShare")}    value={`${p.share}%`}/>
         </div>
 
         {/* ── 7 KUN ── */}
         <div style={{ padding:"14px 15px", borderRadius:14, background:th.s1, border:`1px solid ${th.b1}` }}>
           <p style={{ fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.12em",
-            textTransform:"uppercase", marginBottom:12 }}>Oxirgi 7 kun</p>
+            textTransform:"uppercase", marginBottom:12 }}>{t("ps.last7")}</p>
           <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:62 }}>
             {week.map((v,i)=>{
               const mx = Math.max(...week,1);
@@ -2958,7 +2955,7 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
         {/* ── ISHCHILARI ── */}
         <div>
           <p style={{ fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.12em",
-            textTransform:"uppercase", marginBottom:9 }}>Ishchilari</p>
+            textTransform:"uppercase", marginBottom:9 }}>{t("ps.myWorkers")}</p>
           <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
             {mine.map(w=>(
               <div key={w.id} style={{ display:"flex", alignItems:"center", gap:10,
@@ -2977,7 +2974,7 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
                 <span style={{ fontFamily:"'SF Mono',monospace", fontSize:15, fontWeight:800 }}>{w.today}</span>
               </div>
             ))}
-            {!mine.length && <p style={{ fontSize:12, color:th.t3, textAlign:"center", padding:"14px 0" }}>Ishchi yo'q</p>}
+            {!mine.length && <p style={{ fontSize:12, color:th.t3, textAlign:"center", padding:"14px 0" }}>{t("ps.noWorkers")}</p>}
           </div>
         </div>
 
@@ -2985,9 +2982,9 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:9 }}>
             <p style={{ flex:1, fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.12em",
-              textTransform:"uppercase" }}>To'lov tarixi</p>
+              textTransform:"uppercase" }}>{t("ps.payHistory")}</p>
             <span style={{ fontSize:11, color:th.t3, fontFamily:"'SF Mono',monospace" }}>
-              jami {som(p.paid)}
+              {t("ps.payTotal",{n:som(p.paid||0)})}
             </span>
           </div>
           <div style={{ borderRadius:13, overflow:"hidden", border:`1px solid ${th.b1}` }}>
@@ -2996,7 +2993,7 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
                 padding:"11px 13px", background:th.s1,
                 borderBottom: i<arr.length-1 ? `1px solid ${th.b1}` : "none" }}>
                 <span style={{ fontFamily:"'SF Mono',monospace", fontSize:12, color:th.t3, width:44 }}>{h.d}</span>
-                <span style={{ flex:1, fontSize:12, color:th.t2 }}>{h.n} premium</span>
+                <span style={{ flex:1, fontSize:12, color:th.t2 }}>{t("ps.historyItem",{n:h.n})}</span>
                 <span style={{ fontFamily:"'SF Mono',monospace", fontSize:13, fontWeight:700, color:th.ok }}>
                   {som(h.s)}
                 </span>
@@ -3004,7 +3001,7 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
             ))}
             {!(p.history||[]).length && (
               <p style={{ fontSize:12, color:th.t3, textAlign:"center", padding:"16px 0", background:th.s1 }}>
-                Hali to'lov bo'lmagan
+                {t("ps.payEmpty")}
               </p>
             )}
           </div>
@@ -3038,15 +3035,15 @@ const TeamPage = () => {
     const c = { code: makeCode(kind), kind, by: isOwner ? "owner" : me, used:0, at:Date.now() };
     setCodes(l=>[c,...l]);
     hap.ok();
-    toast({ kind:"ok", title:"Kod yaratildi", note:"Nusxalab yuboring", ms:2600 });
+    toast({ kind:"ok", title:t("team.codeMade"), note:t("team.codeMadeNote"), ms:2600 });
   };
-  const drop = code => { setCodes(l=>l.filter(c=>c.code!==code)); hap.warn(); toast({kind:"warn",title:"Kod o'chirildi"}); };
+  const drop = code => { setCodes(l=>l.filter(c=>c.code!==code)); hap.warn(); toast({kind:"warn",title:t("team.codeDropped")}); };
 
-  const parentName = id => id==="owner" ? "Siz" : id==="me" ? "Siz" : (partners.find(p=>p.id===id)?.name || "—");
+  const parentName = id => id==="owner" ? t("team.you") : id==="me" ? t("team.you") : (partners.find(p=>p.id===id)?.name || "—");
 
   const setPrice = (pid, price) => {
     setPartners(l=>l.map(x=>x.id===pid?{...x, price}:x));
-    toast({kind:"ok",title:"Narx saqlandi",note:`${som(price)} so'm / premium`});
+    toast({kind:"ok",title:t("price.saved"),note:t("price.savedNote",{n:som(price)})});
   };
 
   const dd = () => { const d=new Date(); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}`; };
@@ -3069,8 +3066,8 @@ const TeamPage = () => {
     setWorkers(l=>l.map(w=> ids.includes(w.parent)
       ? { ...w, today:0, week:[...(w.week||[0,0,0,0,0,0,0]).slice(1), 0] } : w));
     hap.heavy();
-    toast({ kind:"ok", title:`${som(sum)} so'm qabul qilindi`,
-      note:`${cnt} premium · ${list.length} hamkor · yangi kun boshlandi`, ms:3600 });
+    toast({ kind:"ok", title:t("pay.settled",{n:som(sum)}),
+      note:t("pay.settledNote",{c:cnt,p:list.length}), ms:3600 });
   };
 
   return (
@@ -3080,17 +3077,17 @@ const TeamPage = () => {
 
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
         <div>
-          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>Jamoa</h1>
+          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>{t("team.title")}</h1>
           <p style={{ fontSize:13, color:th.t3, marginTop:3 }}>
-            {isOwner ? "Taklif kodi orqali qo'shiladi" : "O'z ishchilaringiz"}
+            {isOwner ? t("team.subOwner") : t("team.subOther")}
           </p>
         </div>
-        <Btn sz="sm" onClick={gen}><Ic.Plus s={13} c={th.accTxt}/>Kod</Btn>
+        <Btn sz="sm" onClick={gen}><Ic.Plus s={13} c={th.accTxt}/>{t("team.code")}</Btn>
       </div>
 
       {isOwner && (
         <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background:th.s1, border:`1px solid ${th.b1}` }}>
-          {[{id:"partners",label:"Hamkorlar",n:partners.length},{id:"workers",label:"Ishchilar",n:workers.length}].map(x=>{
+          {[{id:"partners",label:t("team.partners"),n:partners.length},{id:"workers",label:t("team.workers"),n:workers.length}].map(x=>{
             const on = tab===x.id;
             return (
               <button key={x.id} onClick={()=>{hap.select();sTab(x.id);}} style={{
@@ -3111,22 +3108,22 @@ const TeamPage = () => {
       {/* statistika */}
       {tab==="partners" && isOwner ? (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:9 }}>
-          <StatCard label="Hamkor" value={String(partners.length)}/>
-          <StatCard label="Bugun"  value={String(pToday)} color={th.acc}/>
-          <StatCard label="Kodlar" value={String(myCodes.length)}/>
+          <StatCard label={t("team.statPartner")} value={String(partners.length)}/>
+          <StatCard label={t("team.statToday")}  value={String(pToday)} color={th.acc}/>
+          <StatCard label={t("team.statCodes")} value={String(myCodes.length)}/>
         </div>
       ) : (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:9 }}>
-          <StatCard label="Faol"   value={`${online}/${myWorkers.length}`} color={online?th.ok:th.t3}/>
-          <StatCard label="Bugun"  value={String(today)} color={th.acc}/>
-          <StatCard label="Kodlar" value={String(myCodes.length)}/>
+          <StatCard label={t("team.statActive")}   value={`${online}/${myWorkers.length}`} color={online?th.ok:th.t3}/>
+          <StatCard label={t("team.statToday")}  value={String(today)} color={th.acc}/>
+          <StatCard label={t("team.statCodes")} value={String(myCodes.length)}/>
         </div>
       )}
 
       {/* faol kodlar */}
       {myCodes.length > 0 && (
         <div>
-          <Lbl>Faol taklif kodlari</Lbl>
+          <Lbl>{t("team.activeCodes")}</Lbl>
           <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
             {myCodes.map(c=><CodeCard key={c.code} c={c} onKill={drop}/>)}
           </div>
@@ -3142,13 +3139,13 @@ const TeamPage = () => {
       {/* ro'yxat */}
       {tab==="partners" && isOwner ? (
         <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-          {partners.length>0 && <Lbl>Hamkorlar</Lbl>}
+          {partners.length>0 && <Lbl>{t("team.partners")}</Lbl>}
           {partners.map(p=>{
             const mine = workers.filter(w=>w.parent===p.id);
             const tot  = p.today + mine.reduce((a,w)=>a+w.today,0);
             return (
               <div key={p.id} data-item>
-                <SwipeRow label="Hamkor" onDelete={()=>{const el=document.querySelector(`[data-partner="${p.id}"]`);toss(el,()=>{setPartners(l=>l.filter(x=>x.id!==p.id)); setWorkers(l=>l.filter(w=>w.parent!==p.id)); toast({kind:"ok",title:"Hamkor o'chirildi",note:p.name});});}}>
+                <SwipeRow label="Hamkor" onDelete={()=>{const el=document.querySelector(`[data-partner="${p.id}"]`);toss(el,()=>{setPartners(l=>l.filter(x=>x.id!==p.id)); setWorkers(l=>l.filter(w=>w.parent!==p.id)); toast({kind:"ok",title:t("team.partnerGone"),note:p.name});});}}>
                   <div data-row data-partner={p.id} className="ho" onClick={()=>{hap.tap();sOpen(p);}}
                     style={{ ...glass(th,0.04), borderRadius:15, padding:"13px 14px",
                       display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
@@ -3162,13 +3159,13 @@ const TeamPage = () => {
                       <p style={{ fontSize:11, color:th.t3, marginTop:2, fontFamily:"'SF Mono',monospace" }}>
                         ID {p.tgId} · {p.share}%
                       </p>
-                      <p style={{ fontSize:10.5, color:th.t4, marginTop:3 }}>{mine.length} ishchi</p>
+                      <p style={{ fontSize:10.5, color:th.t4, marginTop:3 }}>{tp("team.workerCount", mine.length)}</p>
                     </div>
                     <div style={{ textAlign:"right", flexShrink:0 }}>
                       <p style={{ fontSize:20, fontWeight:800, fontFamily:"'SF Mono',monospace", letterSpacing:"-0.02em" }}>
                         <Count value={tot}/>
                       </p>
-                      <p style={{ fontSize:9, color:th.t3, letterSpacing:"0.08em", textTransform:"uppercase" }}>bugun</p>
+                      <p style={{ fontSize:9, color:th.t3, letterSpacing:"0.08em", textTransform:"uppercase" }}>{t("common.today")}</p>
                     </div>
                     <Ic.Right s={13} c={th.t3}/>
                   </div>
@@ -3177,25 +3174,25 @@ const TeamPage = () => {
             );
           })}
           {!partners.length && !myCodes.length && (
-            <Empty art="folder" title="Hamkor yo'q"
-              note="Taklif kodi yaratib tanishingizga yuboring. Kod kiritgan odam hamkor bo'ladi."
-              action="Kod yaratish" onAction={gen}/>
+            <Empty art="folder" title={t("team.noPartner")}
+              note={t("team.noPartnerNote")}
+              action={t("team.makeCode")} onAction={gen}/>
           )}
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-          {myWorkers.length>0 && <Lbl>Ishchilar</Lbl>}
+          {myWorkers.length>0 && <Lbl>{t("team.workers")}</Lbl>}
           {myWorkers.map(w=>(
             <div key={w.id} data-item>
-              <SwipeRow label="Ishchi" onDelete={()=>{const el=document.querySelector(`[data-worker="${w.id}"]`);toss(el,()=>{setWorkers(l=>l.filter(x=>x.id!==w.id)); toast({kind:"ok",title:"Ishchi o'chirildi",note:w.name});});}}>
+              <SwipeRow label="Ishchi" onDelete={()=>{const el=document.querySelector(`[data-worker="${w.id}"]`);toss(el,()=>{setWorkers(l=>l.filter(x=>x.id!==w.id)); toast({kind:"ok",title:t("team.workerGone"),note:w.name});});}}>
                 <WorkerRow w={w} owner={isOwner ? parentName(w.parent) : null}/>
               </SwipeRow>
             </div>
           ))}
           {!myWorkers.length && !myCodes.length && (
-            <Empty art="folder" title="Ishchi yo'q"
-              note="Kod yaratib bering — kod kiritgan odam ishchi bo'ladi va sizning botingiz orqali ishlaydi."
-              action="Kod yaratish" onAction={gen}/>
+            <Empty art="folder" title={t("team.noWorker")}
+              note={t("team.noWorkerNote")}
+              action={t("team.makeCode")} onAction={gen}/>
           )}
         </div>
       )}
@@ -3311,7 +3308,7 @@ const AppSheet = () => {
   },[]);
 
   const registerToken = async () => {
-    if (!token.trim()) { toast({kind:"err",title:"Token kiriting"}); return; }
+    if (!token.trim()) { toast({kind:"err",title:t("app.needToken")}); return; }
     sRegistering(true);
     try {
       await api.post("/relay/register", { token: token.trim() });
@@ -3321,7 +3318,7 @@ const AppSheet = () => {
       sToken("");
     } catch (e) {
       hap.err();
-      toast({kind:"err",title:"Bog'lanmadi",note:e.message});
+      toast({kind:"err",title:t("app.devErr"),note:e.message});
     } finally {
       sRegistering(false);
     }
@@ -3355,11 +3352,11 @@ const AppSheet = () => {
 
   useEffect(()=>()=>cancelAnimationFrame(raf.current),[]);
 
-  const label = phase==="idle" ? "Yuklab olish"
-              : phase==="chute" ? "Boshlanmoqda"
+  const label = phase==="idle" ? t("app.download")
+              : phase==="chute" ? t("app.starting")
               : phase==="down"  ? `${Math.round(prog*100)}%`
-              : phase==="land"  ? "Qo'nmoqda"
-              : "Tayyor";
+              : phase==="land"  ? t("app.landing")
+              : t("app.ready");
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20, maxWidth:520, margin:"0 auto" }}>
@@ -3370,9 +3367,9 @@ const AppSheet = () => {
           background:th.accSub, border:`1px solid ${th.accBd}` }}>
           <Ic.Send s={22} c={th.acc}/>
         </span>
-        <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.03em" }}>SMS ulagich</h1>
+        <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.03em" }}>{t("app.title")}</h1>
         <p style={{ fontSize:13, color:th.t3, marginTop:6, lineHeight:1.55, maxWidth:290, margin:"6px auto 0" }}>
-          Bank yuborgan tasdiqlash kodini avtomatik ilib, PremoLux ga yetkazadi — hech narsa yozib o'tirish shart emas.
+          {t("app.sub")}
         </p>
       </div>
 
@@ -3397,7 +3394,7 @@ const AppSheet = () => {
         {phase==="done" && (
           <span className="eUp" style={{ marginTop:2 }}>
             <a href={CHUTE_URL} download style={{ textDecoration:"none" }}>
-              <Btn v="ghost" sz="sm">Qayta yuklash</Btn>
+              <Btn v="ghost" sz="sm">{t("app.redownload")}</Btn>
             </a>
           </span>
         )}
@@ -3406,15 +3403,15 @@ const AppSheet = () => {
       {/* ── o'rnatish qadamlari ── */}
       <div>
         <p style={{ fontSize:10, fontWeight:700, color:th.t3, letterSpacing:"0.13em",
-          textTransform:"uppercase", marginBottom:10, paddingLeft:3 }}>O'rnatish</p>
+          textTransform:"uppercase", marginBottom:10, paddingLeft:3 }}>{t("app.install")}</p>
         <div style={{ ...glass(th,0.04), borderRadius:16, overflow:"hidden" }}>
           {[
-            ["APK faylni oching","Yuklab olingan faylga bosing"],
-            ["Noma'lum manbadan o'rnatishga ruxsat bering","Bir martalik tizim so'rovi"],
-            ["SMS ruxsatini tasdiqlang","Faqat bank xabarlarini o'qiydi"],
-            ["Katta tugmani UZOQ BOSING","Token ko'rinadi — nusxalang"],
-            ["Tokenni pastga joylashtiring","Qurilma hisobingizga bog'lanadi"],
-          ].map(([t,d],i,arr)=>(
+            [t("app.st1"),t("app.st1d")],
+            [t("app.st2"),t("app.st2d")],
+            [t("app.st3"),t("app.st3d")],
+            [t("app.st4"),t("app.st4d")],
+            [t("app.st5"),t("app.st5d")],
+          ].map(([step,detail],i,arr)=>(
             <div key={i} style={{ display:"flex", gap:12, padding:"12px 14px",
               borderBottom: i<arr.length-1 ? `1px solid ${th.b1}` : "none" }}>
               <span style={{ width:22, height:22, borderRadius:"50%", flexShrink:0,
@@ -3422,8 +3419,8 @@ const AppSheet = () => {
                 display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:10.5, fontWeight:700, color:th.t2 }}>{i+1}</span>
               <div>
-                <p style={{ fontSize:13, fontWeight:600 }}>{t}</p>
-                <p style={{ fontSize:11.5, color:th.t3, marginTop:2 }}>{d}</p>
+                <p style={{ fontSize:13, fontWeight:600 }}>{step}</p>
+                <p style={{ fontSize:11.5, color:th.t3, marginTop:2 }}>{detail}</p>
               </div>
             </div>
           ))}
@@ -3435,7 +3432,7 @@ const AppSheet = () => {
             <span style={{ width:8, height:8, borderRadius:"50%",
               background: relayStatus?.connected ? th.ok : th.err }}/>
             <p style={{ fontSize:13, fontWeight:700 }}>
-              {relayStatus?.connected ? "Qurilma bog'langan ✓" : "Qurilma hali bog'lanmagan"}
+              {relayStatus?.connected ? t("app.devLinked") : t("app.devNot")}
             </p>
           </div>
           {!relayStatus?.connected && (
@@ -3446,12 +3443,12 @@ const AppSheet = () => {
               </p>
               <div style={{ display:"flex", gap:8 }}>
                 <input value={token} onChange={e=>sToken(e.target.value)}
-                  placeholder="qurilma tokeni..."
+                  placeholder={t("app.devPh")}
                   style={{ flex:1, padding:"10px 12px", borderRadius:10, fontSize:12.5,
                     fontFamily:"'SF Mono',monospace", background:th.s1,
                     border:`1px solid ${th.b1}`, color:th.t1 }}/>
                 <Btn onClick={registerToken} disabled={registering} sz="sm">
-                  {registering ? "..." : "Bog'lash"}
+                  {registering ? "..." : t("app.devLink")}
                 </Btn>
               </div>
             </>
@@ -3640,7 +3637,7 @@ const StatsPage = () => {
         kind:"bar", unit:":00",
         total: today.n,
         prev: (hist[hist.length-2]?.n) || 0,
-        label:"Bugun", sub:"soat kesimida",
+        label:t("stats.perToday"), sub:t("stats.subHours"),
       };
     }
     if (per==="week") {
@@ -3651,17 +3648,17 @@ const StatsPage = () => {
         kind:"line", unit:"",
         total: w.reduce((a,x)=>a+x.n,0),
         prev:  hist.slice(-14,-7).reduce((a,x)=>a+x.n,0),
-        label:"Bu hafta", sub:"7 kun",
+        label:t("stats.perWeek"), sub:t("stats.subDays",{n:7}),
       };
     }
     const m = last(30);
     return {
       data: m.map(x=>x.n),
       labels: m.map(x=>{ const d=new Date(x.d+"T00:00"); return String(d.getDate()); }),
-      kind:"line", unit:"-kun",
+      kind:"line", unit:t("stats.unitDay"),
       total: m.reduce((a,x)=>a+x.n,0),
       prev:  hist.slice(-60,-30).reduce((a,x)=>a+x.n,0),
-      label:"Bu oy", sub:"30 kun",
+      label:t("stats.perMonth"), sub:t("stats.subDays",{n:30}),
     };
   })();
 
@@ -3682,7 +3679,7 @@ const StatsPage = () => {
     });
     const mine = workers.filter(w=>w.parent==="owner")
       .reduce((a,w)=>a + (w.today||0) + (per==="day"?0:(w.week||[]).slice(0,days-1).reduce((b,v)=>b+v,0)), 0);
-    rows.unshift({ name:"O'z ishchilarim", value: mine });
+    rows.unshift({ name:t("stats.mine"), value: mine });
     return rows.filter(r=>r.value>0).sort((a,b)=>b.value-a.value);
   })();
   const distTotal = dist.reduce((a,r)=>a+r.value,0);
@@ -3693,13 +3690,13 @@ const StatsPage = () => {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:18, maxWidth:680 }}>
       <div>
-        <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>Hisobot</h1>
-        <p style={{ fontSize:13, color:th.t3, marginTop:3 }}>Olingan premiumlar statistikasi</p>
+        <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>{t("stats.title")}</h1>
+        <p style={{ fontSize:13, color:th.t3, marginTop:3 }}>{t("stats.sub")}</p>
       </div>
 
       {/* davr */}
       <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background:th.s1, border:`1px solid ${th.b1}` }}>
-        {[{v:"day",l:"Kun"},{v:"week",l:"Hafta"},{v:"month",l:"Oy"}].map(x=>{
+        {[{v:"day",l:t("stats.day")},{v:"week",l:t("stats.week")},{v:"month",l:t("stats.month")}].map(x=>{
           const on = per===x.v;
           return (
             <button key={x.v} onClick={()=>{hap.select();sPer(x.v);}} style={{
@@ -3730,7 +3727,7 @@ const StatsPage = () => {
               letterSpacing:"-0.045em", lineHeight:.9 }}>
               <Count value={view.total}/>
             </p>
-            <p style={{ fontSize:11.5, color:th.t3, marginTop:6 }}>premium olingan</p>
+            <p style={{ fontSize:11.5, color:th.t3, marginTop:6 }}>{t("stats.gotPremium")}</p>
           </div>
 
           <span style={{ display:"inline-flex", alignItems:"center", gap:5,
@@ -3748,17 +3745,17 @@ const StatsPage = () => {
 
       {/* ko'rsatkichlar */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:9 }}>
-        <StatCard label={per==="day"?"Eng gavjum":"O'rtacha"}
+        <StatCard label={per==="day"?t("stats.statPeak"):t("stats.statAvg")}
           value={per==="day" ? `${String(peakH).padStart(2,"0")}:00` : String(avg)}/>
-        <StatCard label="Eng yaxshi" value={String(best)} color={th.acc}/>
-        <StatCard label="O'tgan davr" value={String(view.prev)} color={th.t2}/>
+        <StatCard label={t("stats.statBest")} value={String(best)} color={th.acc}/>
+        <StatCard label={t("stats.statPrev")} value={String(view.prev)} color={th.t2}/>
       </div>
 
       {/* taqsimot */}
       {dist.length > 0 && (
         <div style={{ ...glass(th,0.04), borderRadius:16, padding:"15px 16px" }}>
           <p style={{ fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.13em",
-            textTransform:"uppercase", marginBottom:14 }}>Kim qancha oldi</p>
+            textTransform:"uppercase", marginBottom:14 }}>{t("stats.dist")}</p>
           <div style={{ display:"flex", flexDirection:"column", gap:11 }}>
             {dist.map((r,i)=>(
               <ShareBar key={r.name} name={r.name} value={r.value} total={distTotal}
@@ -3771,7 +3768,7 @@ const StatsPage = () => {
       {/* oylik taqqoslash */}
       <div style={{ ...glass(th,0.04), borderRadius:16, padding:"15px 16px" }}>
         <p style={{ fontSize:9.5, fontWeight:700, color:th.t3, letterSpacing:"0.13em",
-          textTransform:"uppercase", marginBottom:13 }}>Oylar kesimida</p>
+          textTransform:"uppercase", marginBottom:13 }}>{t("stats.byMonth")}</p>
         <div style={{ display:"flex", alignItems:"flex-end", gap:9, height:88 }}>
           {(() => {
             const by = {};
@@ -3804,12 +3801,13 @@ const StatsPage = () => {
 // ─────────────────────────────────────────────
 // BOTTOM NAV
 // ─────────────────────────────────────────────
-const NAV = [
-  { id:"premium", lbl:"Premium",  I:Ic.Star },
-  { id:"bots",    lbl:"Botlar",   I:Ic.Bot  },
-  { id:"cards",   lbl:"Kartalar", I:Ic.Card },
-  { id:"team",    lbl:"Jamoa",    I:Ic.Team },
-  { id:"stats",   lbl:"Hisobot",  I:Ic.Chart },
+// til almashganda ham yangilanishi uchun funksiya (modul darajasida emas!)
+const NAV = () => [
+  { id:"premium", lbl:t("nav.premium"), I:Ic.Star  },
+  { id:"bots",    lbl:t("nav.bots"),    I:Ic.Bot   },
+  { id:"cards",   lbl:t("nav.cards"),   I:Ic.Card  },
+  { id:"team",    lbl:t("nav.team"),    I:Ic.Team  },
+  { id:"stats",   lbl:t("nav.stats"),   I:Ic.Chart },
 ];
 
 const ProfileAvatar = ({ size=38, active, onClick }) => {
@@ -3819,7 +3817,7 @@ const ProfileAvatar = ({ size=38, active, onClick }) => {
   const photo = user?.photo_url;
   const name = user?.first_name || "A";
   return (
-    <button onClick={onClick} aria-label="Profil" style={{
+    <button onClick={onClick} aria-label={t("nav.profile")} style={{
       width:size, height:size, borderRadius:"50%", flexShrink:0,
       border:`2px solid ${active ? th.acc : th.b2}`, cursor:"pointer",
       overflow:"hidden", display:"flex", alignItems:"center",
@@ -3838,7 +3836,7 @@ const ProfileAvatar = ({ size=38, active, onClick }) => {
 const Nav = ({ page, setPage }) => {
   const th   = useTheme();
   const { role } = useData();
-  const items = NAV.filter(n =>
+  const items = NAV().filter(n =>
     role === "worker" ? (n.id==="premium" || n.id==="cards" || n.id==="stats") : true
   );
 
@@ -3933,17 +3931,17 @@ const LoginFlow = ({ account, onChange }) => {
       fn(res);
     } catch (e) {
       hap.err();
-      sEr(e.message || "Xatolik yuz berdi");
+      sEr(e.message || t("err.title"));
     } finally {
       sLd(false);
     }
   };
-  const send=()=>!phone.match(/^\+\d{9,15}$/)?sEr("Format: +998901234567"):run("/auth/send-code",{phone},()=>sStep("otp"));
-  const verify=()=>code.length<5?sEr("5 xonali kod kiriting"):run("/auth/verify-code",{phone,code},(res)=>{
+  const send=()=>!phone.match(/^\+\d{9,15}$/)?sEr(t("login.badPhone")):run("/auth/send-code",{phone},()=>sStep("otp"));
+  const verify=()=>code.length<5?sEr(t("login.badCode")):run("/auth/verify-code",{phone,code},(res)=>{
     if (res?.needPassword) { sFa2(true); sStep("pass"); hap.warn(); }
-    else { sStep("done"); onChange(phone); hap.ok(); toast({kind:"ok",title:"Hisob ulandi",note:phone}); }
+    else { sStep("done"); onChange(phone); hap.ok(); toast({kind:"ok",title:t("login.connected"),note:phone}); }
   });
-  const login=()=>!pass?sEr("Parol kiriting"):run("/auth/verify-2fa",{phone,pass},()=>{sStep("done");onChange(phone);hap.ok();toast({kind:"ok",title:"Hisob ulandi",note:phone});});
+  const login=()=>!pass?sEr(t("login.needPw")):run("/auth/verify-2fa",{phone,pass},()=>{sStep("done");onChange(phone);hap.ok();toast({kind:"ok",title:t("login.connected"),note:phone});});
   const reset=()=>{sStep("phone");sPh("");sCd("");sPas("");sEr("");sFa2(false);onChange("");};
 
   if(step==="done") return(
@@ -3951,13 +3949,13 @@ const LoginFlow = ({ account, onChange }) => {
       <div style={{ width:38,height:38,borderRadius:10,background:"rgba(52,199,89,0.12)",border:"1px solid rgba(52,199,89,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Ic.Check s={16} c={th.ok}/></div>
       <div style={{ flex:1 }}>
         <p style={{ fontWeight:600,fontSize:13,fontFamily:"'SF Mono','Fira Code',monospace",letterSpacing:"0.3px" }}>{phone}</p>
-        <div style={{ display:"flex",gap:5,marginTop:5 }}><Tag v="ok">Ulandi</Tag>{fa2&&<Tag v="warn">2FA</Tag>}</div>
+        <div style={{ display:"flex",gap:5,marginTop:5 }}><Tag v="ok">{t("login.connectedTag")}</Tag>{fa2&&<Tag v="warn">2FA</Tag>}</div>
       </div>
-      <Btn v="ghost" sz="sm" onClick={reset}>Uzish</Btn>
+      <Btn v="ghost" sz="sm" onClick={reset}>{t("login.disconnect")}</Btn>
     </div>
   );
 
-  const STEPS=["Raqam","Kod","2FA"];
+  const STEPS=[t("login.stepPhone"),t("login.stepCode"),t("login.step2fa")];
   return(
     <div style={{ ...glass(th,0.04),borderRadius:13,overflow:"hidden" }}>
       <div style={{ display:"flex",alignItems:"center",padding:"12px 16px",borderBottom:`1px solid ${th.b1}` }}>
@@ -3973,41 +3971,41 @@ const LoginFlow = ({ account, onChange }) => {
       </div>
       <div style={{ padding:16 }}>
         {step==="phone"&&<div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-          <p style={{ fontSize:12,color:th.t3 }}>Telegram hisobingizga kirish kodini yuboramiz</p>
+          <p style={{ fontSize:12,color:th.t3 }}>{t("login.hint")}</p>
           <div style={{ display:"flex",gap:9 }}>
-            <input value={phone} onChange={e=>sPh(e.target.value)} placeholder="+998 90 123 45 67" inputMode="tel" onKeyDown={e=>e.key==="Enter"&&!load&&send()} style={{ fontFamily:"'SF Mono','Fira Code',monospace",fontSize:16,letterSpacing:"0.4px" }}/>
-            <Btn onClick={send} disabled={load} style={{ whiteSpace:"nowrap",minWidth:120 }}>{load?<><Ic.Spin s={12}/>Yuborilmoqda</>:"Kod yuborish"}</Btn>
+            <input value={phone} onChange={e=>sPh(e.target.value)} placeholder={t("login.phonePh")} inputMode="tel" onKeyDown={e=>e.key==="Enter"&&!load&&send()} style={{ fontFamily:"'SF Mono','Fira Code',monospace",fontSize:16,letterSpacing:"0.4px" }}/>
+            <Btn onClick={send} disabled={load} style={{ whiteSpace:"nowrap",minWidth:120 }}>{load?<><Ic.Spin s={12}/>{t("login.sending")}</>:t("login.sendCode")}</Btn>
           </div>
           <Err msg={err}/>
         </div>}
         {step==="otp"&&<div style={{ display:"flex",flexDirection:"column",gap:12 }}>
           <div style={{ ...glass(th,0.05),borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:8,border:"1px solid rgba(52,199,89,0.18)" }}>
             <Ic.Sig s={13} c={th.ok}/>
-            <span style={{ fontSize:12,color:th.t2 }}><span style={{ fontFamily:"monospace",color:th.t1,fontWeight:600 }}>{phone}</span> ga kod yuborildi</span>
+            <span style={{ fontSize:12,color:th.t2 }}><span style={{ fontFamily:"monospace",color:th.t1,fontWeight:600 }}>{phone}</span> — {t("login.codeSent")}</span>
           </div>
           <div>
-            <Lbl>Tasdiqlash kodi</Lbl>
+            <Lbl>{t("login.otpLabel")}</Lbl>
             <CodeBoxes value={code} onChange={sCd} onDone={verify} autoFocus/>
             <div style={{ display:"flex",alignItems:"center",gap:9,marginTop:11 }}>
-              <p style={{ flex:1,fontSize:11,color:th.t4 }}>Telegram'dan kelgan 5 xonali kod</p>
-              <Btn onClick={verify} disabled={load||code.length<5} style={{ whiteSpace:"nowrap",minWidth:118 }}>{load?<><Ic.Spin s={12}/>...</>:<><Ic.Check/>Tasdiqlash</>}</Btn>
+              <p style={{ flex:1,fontSize:11,color:th.t4 }}>{t("login.otpHint")}</p>
+              <Btn onClick={verify} disabled={load||code.length<5} style={{ whiteSpace:"nowrap",minWidth:118 }}>{load?<><Ic.Spin s={12}/>...</>:<><Ic.Check/>{t("login.confirm")}</>}</Btn>
             </div>
           </div>
           <Err msg={err}/>
           <div style={{ display:"flex",gap:16 }}>
-            {["Qayta yuborish","Raqamni o'zgartirish"].map((t,i)=><button key={i} onClick={i===0?send:()=>{sStep("phone");sCd("");sEr("");}} style={{ background:"none",border:"none",color:th.t3,fontSize:11,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline" }}>{t}</button>)}
+            {[t("login.resend"),t("login.changePhone")].map((label,i)=><button key={i} onClick={i===0?send:()=>{sStep("phone");sCd("");sEr("");}} style={{ background:"none",border:"none",color:th.t3,fontSize:11,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline" }}>{label}</button>)}
           </div>
         </div>}
         {step==="pass"&&<div style={{ display:"flex",flexDirection:"column",gap:10 }}>
           <div style={{ ...glass(th,0.05),borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:8,border:"1px solid rgba(255,69,58,0.18)" }}>
             <Ic.Lock s={13} c={th.err}/>
-            <span style={{ fontSize:12,color:th.t2 }}>Hisobda <b style={{ color:th.t1 }}>ikki bosqichli himoya</b> yoqilgan</span>
+            <span style={{ fontSize:12,color:th.t2 }}>{t("login.has2fa")}</span>
           </div>
           <div>
-            <Lbl>2FA Parol</Lbl>
+            <Lbl>{t("login.pwLabel")}</Lbl>
             <div style={{ display:"flex",gap:9 }}>
-              <input type="password" value={pass} onChange={e=>sPas(e.target.value)} placeholder="Parolni kiriting" autoFocus onKeyDown={e=>e.key==="Enter"&&!load&&login()}/>
-              <Btn onClick={login} disabled={load}>{load?<><Ic.Spin s={12}/>...</>:"Kirish"}</Btn>
+              <input type="password" value={pass} onChange={e=>sPas(e.target.value)} placeholder={t("login.pwPh")} autoFocus onKeyDown={e=>e.key==="Enter"&&!load&&login()}/>
+              <Btn onClick={login} disabled={load}>{load?<><Ic.Spin s={12}/>...</>:t("login.enter")}</Btn>
             </div>
           </div>
           <Err msg={err}/>
@@ -4025,12 +4023,12 @@ const BotRow = ({ bot, idx, onChange }) => {
   const [busy,sBusy]=useState(false);
   const conn=async ()=>{
     if(busy) return;
-    if(!inp.startsWith("@")){hap.err();sE("@ bilan boshlang");return;}
+    if(!inp.startsWith("@")){hap.err();sE(t("bot.needAt"));return;}
     sBusy(true); sE("");
     try {
       await api.post("/bots/connect", { slot: idx+1, username: inp, maxLogins: bot.maxLogins||15 });
       onChange({...bot,username:inp,connected:true,active:0});
-      hap.ok(); toast({kind:"ok",title:"Bot ulandi",note:inp});
+      hap.ok(); toast({kind:"ok",title:t("bot.connect"),note:inp});
       sI(""); sO(false);
     } catch (e) {
       hap.err(); sE(e.message || "Ulanmadi");
@@ -4054,16 +4052,16 @@ const BotRow = ({ bot, idx, onChange }) => {
           </div>
           <div style={{ display:"flex",gap:7,alignItems:"center",flexShrink:0 }}>
             <div style={{ width:5,height:5,borderRadius:"50%",background:bot.online?th.ok:th.t3 }}/>
-            <Btn v="ghost" sz="sm" onClick={()=>onChange({...bot,online:!bot.online})}>{bot.online?"Stop":"Start"}</Btn>
+            <Btn v="ghost" sz="sm" onClick={()=>onChange({...bot,online:!bot.online})}>{bot.online?t("bots.stop"):t("bots.start")}</Btn>
             <Btn v="danger" sz="sm" onClick={disc}><Ic.Trash/></Btn>
           </div>
         </>:<>
-          <span style={{ flex:1,color:th.t3,fontSize:13 }}>Bo'sh slot</span>
-          <Btn v="outline" sz="sm" onClick={()=>sO(!open)}>{open?"Bekor":<><Ic.Plus/>Ulash</>}</Btn>
+          <span style={{ flex:1,color:th.t3,fontSize:13 }}>{t("bots.emptySlot")}</span>
+          <Btn v="outline" sz="sm" onClick={()=>sO(!open)}>{open?t("common.cancel"):<><Ic.Plus/>{t("bots.share")}</>}</Btn>
         </>}
       </div>
       {open&&!bot.connected&&<div style={{ padding:"11px 14px",borderTop:`1px solid ${th.b1}`,background:th.id==="light"?"rgba(16,19,26,0.03)":"rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",gap:7 }}>
-        <div style={{ display:"flex",gap:9 }}><input value={inp} onChange={e=>sI(e.target.value)} placeholder="@BotUsername" autoFocus onKeyDown={e=>e.key==="Enter"&&!busy&&conn()}/><Btn onClick={conn} disabled={busy} style={{ whiteSpace:"nowrap" }}>{busy?"Ulanmoqda...":"Ulash"}</Btn></div>
+        <div style={{ display:"flex",gap:9 }}><input value={inp} onChange={e=>sI(e.target.value)} placeholder="@BotUsername" autoFocus onKeyDown={e=>e.key==="Enter"&&!busy&&conn()}/><Btn onClick={conn} disabled={busy} style={{ whiteSpace:"nowrap" }}>{busy?t("bot.connecting"):t("bots.share")}</Btn></div>
         <Err msg={err}/>
       </div>}
       {bot.connected&&<div style={{ padding:"8px 14px",borderTop:`1px solid ${th.b1}`,background:th.id==="light"?"rgba(16,19,26,0.025)":"rgba(0,0,0,0.15)",display:"flex",alignItems:"center",gap:8 }}>
@@ -4084,39 +4082,39 @@ const BotsPage = () => {
   return(
     <div style={{ display:"flex",flexDirection:"column",gap:22,maxWidth:680 }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12 }}>
-        <div><h1 style={{ fontSize:24,fontWeight:800,letterSpacing:"-0.03em",lineHeight:1.1 }}>Botlar</h1><p style={{ fontSize:13,color:th.t3,marginTop:3 }}>Dostup hisob va raqam beruvchi botlar</p></div>
-        <Tag v={ready?"ok":"warn"}>{ready?"Tayyor":"Sozlash kerak"}</Tag>
+        <div><h1 style={{ fontSize:24,fontWeight:800,letterSpacing:"-0.03em",lineHeight:1.1 }}>{t("bots.title")}</h1><p style={{ fontSize:13,color:th.t3,marginTop:3 }}>{t("bots.sub")}</p></div>
+        <Tag v={ready?"ok":"warn"}>{ready?t("bots.ready"):t("bots.needSetup")}</Tag>
       </div>
       <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:9 }}>
-        <StatCard label="Botlar"   value={`${conn.length}/3`} color={conn.length?th.acc:th.t3}/>
-        <StatCard label="Kapasite" value={`${conn.reduce((s,b)=>s+b.maxLogins,0)}`}/>
-        <StatCard label="Status"   value={ready?"Faol":"Nofaol"} color={ready?th.ok:th.warn}/>
+        <StatCard label={t("bots.count")}   value={`${conn.length}/3`} color={conn.length?th.acc:th.t3}/>
+        <StatCard label={t("bots.capacity")} value={`${conn.reduce((s,b)=>s+b.maxLogins,0)}`}/>
+        <StatCard label={t("bots.status")}   value={ready?t("bots.active"):t("bots.inactive")} color={ready?th.ok:th.warn}/>
       </div>
       <div>
-        <Sec icon={<Ic.Lock s={14} c={th.t2}/>} label="Dostup hisob" sub="Userbot shu hisob orqali @PremiumBot ga kiradi"/>
+        <Sec icon={<Ic.Lock s={14} c={th.t2}/>} label={t("bots.accessAcc")} sub={t("bots.accessAccSub")}/>
         <LoginFlow account={acc} onChange={sAcc}/>
-        {!acc&&<div style={{ ...glass(th,0.05),borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:7,marginTop:9,border:"1px solid rgba(255,159,10,0.18)" }}><Ic.Warn s={13} c={th.warn}/><span style={{ fontSize:12,color:th.warn }}>Dostup hisob ulanmasa tizim ishlamaydi</span></div>}
+        {!acc&&<div style={{ ...glass(th,0.05),borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:7,marginTop:9,border:"1px solid rgba(255,159,10,0.18)" }}><Ic.Warn s={13} c={th.warn}/><span style={{ fontSize:12,color:th.warn }}>{t("bots.accWarn")}</span></div>}
       </div>
       <HR/>
       <div>
-        <Sec icon={<Ic.Bot s={14} c={th.t2}/>} label="Raqam beruvchi botlar" sub="Maksimal 3 ta bot"/>
+        <Sec icon={<Ic.Bot s={14} c={th.t2}/>} label={t("bots.numBots")} sub={t("bots.numBotsSub")}/>
         <div style={{ display:"flex",flexDirection:"column",gap:7 }}>
           {bots.map((b,i)=><BotRow key={b.id} bot={b} idx={i} onChange={v=>upB(i,v)}/>)}
         </div>
       </div>
       <HR/>
       <div style={{ ...glass(th,0.04),borderRadius:13,padding:"15px 17px" }}>
-        <p style={{ fontSize:10,fontWeight:700,color:th.t3,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:13 }}>Ishlash tartibi</p>
+        <p style={{ fontSize:10,fontWeight:700,color:th.t3,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:13 }}>{t("bots.how")}</p>
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-          {[["Dostup hisob",acc||"—","Telegram hisobiga kirish"],["Bot",conn.map(b=>b.username).join(", ")||"—","/GetNumber buyrug'i"],["Mijoz","Login","Hisobga kirish"],["@PremiumBot","Karta","Premium faollashtiriladi"]].map(([s,v,d],i)=>(
+          {[[t("bots.s1"),acc||"—",t("bots.d1")],[t("bots.s2"),conn.map(b=>b.username).join(", ")||"—",t("bots.d2")],[t("bots.s3"),"Login",t("bots.d3")],[t("bots.s4"),tArray("premium.step")[3],t("bots.d4")]].map(([s,v,detail],i)=>(
             <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:11 }}>
               <div style={{ width:20,height:20,borderRadius:"50%",flexShrink:0,marginTop:1,background:th.accSub,border:`1px solid ${th.accBd}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:th.acc }}>{i+1}</div>
-              <div><p style={{ fontSize:12,color:th.t2 }}>{s} — <span style={{ fontFamily:"monospace",fontWeight:700,color:th.t1 }}>{v}</span></p><p style={{ fontSize:11,color:th.t3 }}>{d}</p></div>
+              <div><p style={{ fontSize:12,color:th.t2 }}>{s} — <span style={{ fontFamily:"monospace",fontWeight:700,color:th.t1 }}>{v}</span></p><p style={{ fontSize:11,color:th.t3 }}>{detail}</p></div>
             </div>
           ))}
         </div>
       </div>
-      <Btn onClick={()=>{sSav(true);hap.ok();toast({kind:'ok',title:'Sozlama saqlandi',note:`${conn.length} bot · ${acc}`});setTimeout(()=>sSav(false),2000);}} full sz="lg" disabled={!ready}>{saved?<><Ic.Check/>Saqlandi</>:"Saqlash"}</Btn>
+      <Btn onClick={()=>{sSav(true);hap.ok();toast({kind:'ok',title:t('bots.saved'),note:t('bots.saveNote',{n:conn.length,acc:acc||'—'})});setTimeout(()=>sSav(false),2000);}} full sz="lg" disabled={!ready}>{saved?<><Ic.Check/>{t("common.saved")}</>:t("common.save")}</Btn>
     </div>
   );
 };
@@ -4360,7 +4358,7 @@ const SetGroup = ({ label, children, delay=0 }) => {
   return (
     <div className="rowIn" style={{ animationDelay:`${delay}s` }}>
       <p style={{ fontSize:10, fontWeight:700, color:th.t3, letterSpacing:"0.14em",
-        textTransform:"uppercase", marginBottom:9, paddingLeft:3 }}>{label}</p>
+        textTransform:"uppercase", marginBottom:9, paddingLeft:3 }}>{label || t("common.delete")}</p>
       <div style={{ ...glass(th,0.04), borderRadius:16, overflow:"hidden" }}>{children}</div>
     </div>
   );
@@ -4456,8 +4454,8 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
                                     maxLogins:x.maxLogins||15, online:false }));
 
   const wipe = (what) => {
-    if (what==="cards") { setPeople([]); toast({kind:"ok",title:"Kartalar tozalandi"}); }
-    if (what==="bots")  { setBots(resetBots); setAccount(""); toast({kind:"ok",title:"Botlar tozalandi"}); }
+    if (what==="cards") { setPeople([]); toast({kind:"ok",title:t("set.cardsCleared")}); }
+    if (what==="bots")  { setBots(resetBots); setAccount(""); toast({kind:"ok",title:t("set.botsCleared")}); }
     if (what==="all") {
       // "Hammasini o'chirish" — taklif kodlari, jamoa va tarix ham kiradi,
       // aks holda ular localStorage'da qolib ketardi
@@ -4465,7 +4463,7 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
       setCodes([]); setPartners([]); setWorkers([]); setHist([]);
       setPin(null); setRole("owner");
       try { localStorage.removeItem("premolux_active_order"); } catch {}
-      toast({kind:"err",title:"Hamma narsa tozalandi"});
+      toast({kind:"err",title:t("set.allCleared")});
     }
     sAsk(null);
   };
@@ -4473,8 +4471,8 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
   const backup = async () => {
     const data = JSON.stringify({ v:1, at:new Date().toISOString(), people, bots, cfg }, null, 2);
     const ok = await copyText(data);
-    ok ? toast({kind:"ok",title:"Zaxira nusxalandi",note:`${cards} karta · ${wired} bot`,ms:3000})
-       : toast({kind:"err",title:"Nusxalab bo'lmadi"});
+    ok ? toast({kind:"ok",title:t("set.backupOk"),note:t("set.backupOkNote",{c:cards,b:wired}),ms:3000})
+       : toast({kind:"err",title:t("set.backupErr")});
   };
 
   return (
@@ -4492,7 +4490,7 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
                 <p style={{ fontSize:12.5, color:th.t3, marginTop:3, lineHeight:1.5 }}>{ask.note}</p>
               </div>
             </div>
-            <HoldBtn label="Bosib turing — o'chirish" done={()=>wipe(ask.what)}/>
+            <HoldBtn label={t("set.wipeHold")} done={()=>wipe(ask.what)}/>
             <Btn v="ghost" full onClick={()=>sAsk(null)}>Bekor</Btn>
           </div>
         </Modal>
@@ -4500,131 +4498,129 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
 
       {/* sarlavha */}
       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={onBack} aria-label="Orqaga" style={{
+        <button onClick={onBack} aria-label={t("common.back")} style={{
           width:34, height:34, borderRadius:10, flexShrink:0, cursor:"pointer",
           background:th.s1, border:`1px solid ${th.b1}`, color:th.t2,
           display:"flex", alignItems:"center", justifyContent:"center",
         }}><Ic.Left/></button>
         <div>
-          <h1 style={{ fontSize:23, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>Sozlamalar</h1>
-          <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>Tizim xatti-harakati va xavfsizlik</p>
+          <h1 style={{ fontSize:23, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.1 }}>{t("set.title")}</h1>
+          <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>{t("set.sub")}</p>
         </div>
       </div>
 
       {/* ── OQIM ── */}
-      <SetGroup label="Oqim va limitlar" delay={0.02}>
-        <SetRow icon={<Ic.Bot s={16} c={th.t2}/>} title="Bir vaqtda oqim"
-          note="Parallel ishlaydigan maksimal buyurtma"
+      <SetGroup label={t("set.flow")} delay={0.02}>
+        <SetRow icon={<Ic.Bot s={16} c={th.t2}/>} title={t("set.flowStreams")}
+          note={t("set.flowStreamsNote")}
           right={<Stepper value={cfg.streams} min={1} max={20} onChange={v=>set("streams",v)} width={94}/>}/>
-        <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title="Qayta urinish"
-          note="Karta rad etilsa necha marta sinalsin"
+        <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.flowRetry")}
+          note={t("set.flowRetryNote")}
           right={<Stepper value={cfg.retry} min={0} max={5} onChange={v=>set("retry",v)} width={94}/>}/>
-        <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title="Karta limiti"
-          note="Bitta kartadan nechta premium olinadi"
+        <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title={t("set.flowCap")}
+          note={t("set.flowCapNote")}
           right={<Stepper value={cfg.cardCap} min={1} max={10} onChange={v=>set("cardCap",v)} width={94}/>} last/>
       </SetGroup>
 
       {/* ── XAVFSIZLIK ── */}
-      <SetGroup label="Xavfsizlik" delay={0.07}>
-        <SetRow icon={<Ic.Lock s={16} c={th.ok}/>} title="PIN qulfi"
-          note="Ilova ochilganda kod so'raladi"
-          right={<Tag v="ok">Yoqilgan</Tag>}/>
-        <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title="Kodni o'zgartirish"
-          note="Keyingi ochilishda yangi kod so'raladi"
+      <SetGroup label={t("set.security")} delay={0.07}>
+        <SetRow icon={<Ic.Lock s={16} c={th.ok}/>} title={t("set.pin")}
+          note={t("set.pinOffNote")}
+          right={<Tag>{t("set.pinOff")}</Tag>}/>
+        <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.pinReset")}
+          note={t("set.pinResetNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>{ setPin(null); toast({kind:"warn",title:"Kod tozalandi",note:"Ilovani qayta oching"}); }}/>
+          onClick={()=>{ setPin(null); toast({kind:"warn",title:t("set.pinCleared"),note:t("set.pinClearedNote")}); }}/>
         {cfg.pin && (
-          <SetRow icon={<Ic.Clock s={16} c={th.t2}/>} title="Avtoqulf"
-            note="Fon rejimida shuncha turgach qulflanadi"
+          <SetRow icon={<Ic.Clock s={16} c={th.t2}/>} title={t("set.autolock")}
+            note={t("set.autolockNote")}
             right={<Segments value={cfg.lockAfter} onChange={v=>set("lockAfter",v)}
               options={[{v:1,l:"1d"},{v:5,l:"5d"},{v:15,l:"15d"},{v:0,l:"Yo'q"}]}/>}/>
         )}
-        <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title="Raqamni yashirish"
-          note="Ishchilar faqat oxirgi 4 raqamni ko'radi"
+        <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title={t("set.maskPan")}
+          note={t("set.maskPanNote")}
           right={<Switch on={cfg.maskPan} onChange={v=>set("maskPan",v)}/>}/>
-        <SetRow icon={<Ic.User s={16} c={th.t2}/>} title="Kirgan qurilmalar"
-          note="1 ta faol sessiya"
+        <SetRow icon={<Ic.User s={16} c={th.t2}/>} title={t("set.devices")}
+          note={t("set.devicesNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>toast({kind:"info",title:"Sessiyalar",note:"Server ulangach ishlaydi"})} last/>
+          onClick={()=>toast({kind:"info",title:t("set.devices"),note:t("set.sessionsSoon")})} last/>
       </SetGroup>
 
       {/* ── BILDIRISHNOMA ── */}
-      <SetGroup label="Bildirishnomalar" delay={0.12}>
-        <SetRow icon={<Ic.Star s={16} c={th.t2}/>} title="Premium olinganda"
+      <SetGroup label={t("set.notif")} delay={0.12}>
+        <SetRow icon={<Ic.Star s={16} c={th.t2}/>} title={t("set.notifOk")}
           right={<Switch on={cfg.nOk} onChange={v=>set("nOk",v)} tone={th.ok}/>}/>
-        <SetRow icon={<Ic.Warn s={16} c={th.t2}/>} title="Karta limitga tushganda"
+        <SetRow icon={<Ic.Warn s={16} c={th.t2}/>} title={t("set.notifLimit")}
           right={<Switch on={cfg.nLimit} onChange={v=>set("nLimit",v)} tone={th.warn}/>}/>
-        <SetRow icon={<Ic.X s={16} c={th.t2}/>} title="Xato bo'lganda"
+        <SetRow icon={<Ic.X s={16} c={th.t2}/>} title={t("set.notifErr")}
           right={<Switch on={cfg.nErr} onChange={v=>set("nErr",v)} tone={th.err}/>}/>
-        <SetRow icon={<Ic.Clock s={16} c={th.t2}/>} title="Kunlik hisobot"
-          note={cfg.daily ? `Har kuni ${String(cfg.dailyAt).padStart(2,"0")}:00 da` : "O'chirilgan"}
+        <SetRow icon={<Ic.Clock s={16} c={th.t2}/>} title={t("set.daily")}
+          note={cfg.daily ? t("set.dailyOn",{t:String(cfg.dailyAt).padStart(2,"0")}) : t("set.dailyOff")}
           right={<Switch on={cfg.daily} onChange={v=>set("daily",v)}/>} last={!cfg.daily}/>
         {cfg.daily && (
-          <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title="Hisobot vaqti"
+          <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.dailyTime")}
             right={<Stepper value={cfg.dailyAt} min={0} max={23} unit=":00" onChange={v=>set("dailyAt",v)} width={110}/>} last/>
         )}
       </SetGroup>
 
       {/* ── ROL (demo) ── */}
-      <SetGroup label="Rol (demo)" delay={0.15}>
-        <SetRow icon={<Ic.User s={16} c={th.warn}/>} title="Yangi foydalanuvchi" tone={th.warn}
-          note="Kanal → PIN → taklif kodi jarayonini sinash"
+      <SetGroup label={t("set.roleDemo")} delay={0.15}>
+        <SetRow icon={<Ic.User s={16} c={th.warn}/>} title={t("set.roleNew")} tone={th.warn}
+          note={t("set.roleNewNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>{ setRole(null); setPin(null); toast({kind:"info",title:"Kirish jarayoni",note:"Ilovani qayta oching"}); }}/>
-        <SetRow icon={<Ic.Send s={16} c={th.t2}/>} title="Kirish oqimini sinash"
-          note="Kanal → kod → rol ketma-ketligini ko'rish"
+          onClick={()=>{ setRole(null); setPin(null); toast({kind:"info",title:t("set.roleNew"),note:t("set.pinClearedNote")}); }}/>
+        <SetRow icon={<Ic.Send s={16} c={th.t2}/>} title={t("set.roleFlow")}
+          note={t("set.roleFlowNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>{ setRole(null); toast({kind:"info",title:"Kirish oqimi",note:"Kod: PRT-K7M2-QX94-BD5N"}); }}/>
-        <SetRow icon={<Ic.Team s={16} c={th.t2}/>} title="Panel ko'rinishi"
-          note={role==="owner" ? "Egasi — hammasi ochiq"
-              : role==="partner" ? "Hamkor — o'z ishchilari"
-              : "Ishchi — bot va jamoa yo'q"}
-          right={<Segments value={role} onChange={v=>{ setRole(v); toast({kind:"info",title:"Rol almashtirildi",note:{owner:"Egasi",partner:"Hamkor",worker:"Ishchi"}[v]}); }}
-            options={[{v:"owner",l:"Egasi"},{v:"partner",l:"Hamkor"},{v:"worker",l:"Ishchi"}]}/>}/>
-        <SetRow icon={<Ic.User s={16} c={th.t2}/>} title="Yangi a'zo sifatida kirish"
-          note="Kanal → kod ekranini sinab ko'rish"
+          onClick={()=>{ setRole(null); toast({kind:"info",title:t("set.flowOpened")}); }}/>
+        <SetRow icon={<Ic.Team s={16} c={th.t2}/>} title={t("set.roleView")}
+          note={role==="owner" ? t("set.roleOwner") : role==="partner" ? t("set.rolePartner") : t("set.roleWorker")}
+          right={<Segments value={role} onChange={v=>{ setRole(v); toast({kind:"info",title:t("set.roleChanged"),note:{owner:t("set.roleOwnerL"),partner:t("set.rolePartnerL"),worker:t("set.roleWorkerL")}[v]}); }}
+            options={[{v:"owner",l:t("set.roleOwnerL")},{v:"partner",l:t("set.rolePartnerL")},{v:"worker",l:t("set.roleWorkerL")}]}/>}/>
+        <SetRow icon={<Ic.User s={16} c={th.t2}/>} title={t("set.joinFlow")}
+          note={t("set.joinFlowNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>{ setRole(null); toast({kind:"info",title:"Kirish oqimi ochildi"}); }} last/>
+          onClick={()=>{ setRole(null); toast({kind:"info",title:t("set.flowOpened")}); }} last/>
       </SetGroup>
 
       {/* ── KO'RINISH ── */}
-      <SetGroup label="Ko'rinish" delay={0.17}>
-        <SetRow icon={<Ic.Theme s={16} c={th.t2}/>} title="Mavzu"
+      <SetGroup label={t("set.look")} delay={0.17}>
+        <SetRow icon={<Ic.Theme s={16} c={th.t2}/>} title={t("set.theme")}
           right={<Segments value={themeId} onChange={setThemeId}
-            options={[{v:"amoled",l:"Qora"},{v:"stitch",l:"Ko'k"},{v:"light",l:"Yorug'"}]}/>}/>
-        <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title="Haptik javob"
-          note="Bosganda telefon tebranadi"
+            options={[{v:"amoled",l:t("prof.themeDark")},{v:"stitch",l:t("prof.themeBlue")},{v:"light",l:t("prof.themeLight")}]}/>}/>
+        <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.haptic")}
+          note={t("set.hapticNote")}
           right={<Switch on={cfg.haptic} onChange={v=>{ setHaptic(v); set("haptic",v); if(v) hap.ok(); }}/>}/>
-        <SetRow icon={<Ic.Play s={16} c={th.t2}/>} title="Harakatni kamaytirish"
-          note="Sekin telefonlar uchun animatsiyalar qisqaradi"
+        <SetRow icon={<Ic.Play s={16} c={th.t2}/>} title={t("set.calm")}
+          note={t("set.calmNote")}
           right={<Switch on={cfg.calm} onChange={v=>set("calm",v)}/>} last/>
       </SetGroup>
 
       {/* ── MA'LUMOT ── */}
-      <SetGroup label="Ma'lumot" delay={0.22}>
-        <SetRow icon={<Ic.Copy s={15} c={th.t2}/>} title="Zaxira nusxa"
-          note={`${people.length} shaxs · ${cards} karta · ${wired} bot`}
+      <SetGroup label={t("set.data")} delay={0.22}>
+        <SetRow icon={<Ic.Copy s={15} c={th.t2}/>} title={t("set.backup")}
+          note={t("set.backupNote",{p:people.length,c:cards,b:wired})}
           right={<Ic.Right s={14} c={th.t3}/>} onClick={backup}/>
-        <SetRow icon={<Ic.Trash s={15} c={th.warn}/>} title="Kartalarni tozalash" tone={th.warn}
-          note="Barcha shaxs va kartalar o'chadi"
+        <SetRow icon={<Ic.Trash s={15} c={th.warn}/>} title={t("set.wipeCards")} tone={th.warn}
+          note={t("set.wipeCardsNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>sAsk({what:"cards",title:"Kartalarni tozalash",note:`${people.length} shaxs va ${cards} karta butunlay o'chiriladi.`})}/>
-        <SetRow icon={<Ic.Trash s={15} c={th.warn}/>} title="Botlarni uzish" tone={th.warn}
-          note="Dostup hisob va botlar uziladi"
+          onClick={()=>sAsk({what:"cards",title:t("set.wipeCardsTitle"),note:t("set.wipeCardsAsk",{p:people.length,c:cards})})}/>
+        <SetRow icon={<Ic.Trash s={15} c={th.warn}/>} title={t("set.wipeBots")} tone={th.warn}
+          note={t("set.wipeBotsNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>sAsk({what:"bots",title:"Botlarni uzish",note:"Dostup hisob va barcha ulangan botlar uziladi."})} last/>
+          onClick={()=>sAsk({what:"bots",title:t("set.wipeBotsTitle"),note:t("set.wipeBotsAsk")})} last/>
       </SetGroup>
 
       {/* ── XAVFLI ── */}
       <div className="rowIn" style={{ animationDelay:"0.27s" }}>
         <p style={{ fontSize:10, fontWeight:700, color:th.err, letterSpacing:"0.14em",
-          textTransform:"uppercase", marginBottom:9, paddingLeft:3 }}>Xavfli hudud</p>
+          textTransform:"uppercase", marginBottom:9, paddingLeft:3 }}>{t("set.danger")}</p>
         <div style={{ borderRadius:16, padding:16, background:`${th.err}0d`, border:`1px solid ${th.err}2e` }}>
-          <p style={{ fontSize:14, fontWeight:700, color:th.err, letterSpacing:"-0.01em" }}>Hammasini o'chirish</p>
+          <p style={{ fontSize:14, fontWeight:700, color:th.err, letterSpacing:"-0.01em" }}>{t("set.wipeAll")}</p>
           <p style={{ fontSize:12, color:th.t3, marginTop:5, marginBottom:14, lineHeight:1.55 }}>
-            Kartalar, botlar, dostup hisob — hammasi yo'q qilinadi. Bu amalni qaytarib bo'lmaydi.
+            {t("set.wipeAllDesc")}
           </p>
-          <HoldBtn label="Bosib turing — hammasini o'chirish"
+          <HoldBtn label={t("set.wipeAllBtn")}
             done={()=>wipe("all")}/>
         </div>
       </div>
@@ -4763,11 +4759,11 @@ const cardHealth = (c) => {
 };
 
 const HEALTH_META = (th) => ({
-  fresh:   { tone: th.ok,   label: "Yangi",           short: "yangi" },
-  active:  { tone: th.ok,   label: "Faol",            short: "faol" },
-  soon:    { tone: th.warn, label: "Muddati yaqin",   short: "muddat" },
-  limit:   { tone: th.err,  label: "Limit tugadi",    short: "limit" },
-  expired: { tone: th.t3,   label: "Muddati tugagan", short: "eskirgan" },
+  fresh:   { tone: th.ok,   key: "health.fresh" },
+  active:  { tone: th.ok,   key: "health.active" },
+  soon:    { tone: th.warn, key: "health.soon" },
+  limit:   { tone: th.err,  key: "health.limit" },
+  expired: { tone: th.t3,   key: "health.expired" },
 });
 
 // bo'lakli ko'rsatkich
@@ -4921,12 +4917,12 @@ const CardFlip = ({ card, children }) => {
           padding:"11px 12px", display:"flex", flexDirection:"column", gap:7,
         }}>
           <div style={{ display:"flex", gap:7, alignItems:"stretch" }}>
-            <CopyField label="Karta raqami" value={card.num} grow wide/>
+            <CopyField label={t("card.flip.number")} value={card.num} grow wide/>
             {/* ortga qaytarish */}
             <button
               onTouchStart={e=>e.stopPropagation()} onTouchEnd={e=>e.stopPropagation()} onTouchMove={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} onMouseUp={e=>e.stopPropagation()}
               onClick={e=>{ e.stopPropagation(); hap.tap(); sOn(false); }}
-              aria-label="Yopish"
+              aria-label={t("common.close")}
               style={{
                 width:44, flexShrink:0, borderRadius:11, cursor:"pointer",
                 background: th.s2, border:`1px solid ${th.b2}`,
@@ -4942,9 +4938,9 @@ const CardFlip = ({ card, children }) => {
           </div>
 
           <div style={{ display:"flex", gap:7 }}>
-            <CopyField label="CVV"    value={card.cvv} tone={b.c}/>
-            <CopyField label="Muddat" value={card.exp}/>
-            <CopyField label="Egasi"  value={card.name} mono={false} grow/>
+            <CopyField label={t("card.flip.cvv")}    value={card.cvv} tone={b.c}/>
+            <CopyField label={t("card.flip.exp")} value={card.exp}/>
+            <CopyField label={t("card.flip.owner")}  value={card.name} mono={false} grow/>
           </div>
         </div>
       </div>
@@ -4966,8 +4962,8 @@ const Conf=({title,desc,onOk,onClose})=>{
 
 const BankM=({onAdd,onClose})=>{
   const [n,sN]=useState("");const[e,sE]=useState("");
-  const go=()=>{if(!n.trim()){sE("Bank nomini kiriting");return;}onAdd(n.trim());onClose();};
-  return <Modal onClose={onClose}><MH title="Bank qo'shish" onClose={onClose}/><div style={{ padding:18,display:"flex",flexDirection:"column",gap:11 }}><div><Lbl>Bank nomi</Lbl><input value={n} onChange={e=>sN(e.target.value)} placeholder="Kapitalbank" autoFocus onKeyDown={e=>e.key==="Enter"&&go()} style={{ fontWeight:500,fontSize:16 }}/></div><Err msg={e}/><Btn onClick={go} full sz="lg">{n.trim()?`${n} — Davom →`:"Nomini kiriting"}</Btn></div></Modal>;
+  const go=()=>{if(!n.trim()){sE(t("bankm.needName"));return;}onAdd(n.trim());onClose();};
+  return <Modal onClose={onClose}><MH title={t("bankm.title")} onClose={onClose}/><div style={{ padding:18,display:"flex",flexDirection:"column",gap:11 }}><div><Lbl>{t("cardm.bankName")}</Lbl><input value={n} onChange={e=>sN(e.target.value)} placeholder="Kapitalbank" autoFocus onKeyDown={e=>e.key==="Enter"&&go()} style={{ fontWeight:500,fontSize:16 }}/></div><Err msg={e}/><Btn onClick={go} full sz="lg">{n.trim()?`${n} →`:t("bankm.needName")}</Btn></div></Modal>;
 };
 
 const CardM=({pN,bN,onAdd,onClose})=>{
@@ -4977,26 +4973,26 @@ const CardM=({pN,bN,onAdd,onClose})=>{
   const fN=v=>v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
   const fE=v=>{const c=v.replace(/\D/g,"").slice(0,4);return c.length>=2?c.slice(0,2)+"/"+c.slice(2):c;};
   const go=()=>{
-    if(f.num.replace(/\s/g,"").length<16){sE("16 xonali karta raqami");return;}
-    if(f.exp.length<5){sE("MM/YY format");return;}
-    if(f.cvv.length<3){sE("CVV kiriting");return;}
-    if(!f.name.trim()){sE("Ism familiya kiriting");return;}
+    if(f.num.replace(/\s/g,"").length<16){sE(t("cardm.errNum"));return;}
+    if(f.exp.length<5){sE(t("cardm.errExp"));return;}
+    if(f.cvv.length<3){sE(t("cardm.errCvv"));return;}
+    if(!f.name.trim()){sE(t("cardm.errName"));return;}
     onAdd({...f,bankId:BL.find(x=>x.name===bN)?.id||bN,id:Date.now(),used:0,limit:3});onClose();
   };
-  return <Modal onClose={onClose}><MH title="Karta qo'shish" sub={`${pN} · ${bN}`} onClose={onClose}/>
+  return <Modal onClose={onClose}><MH title={t("cardm.title")} sub={`${pN} · ${bN}`} onClose={onClose}/>
     <div style={{ padding:18,display:"flex",flexDirection:"column",gap:12,maxHeight:"65vh",overflowY:"auto" }}>
       <div style={{ height:72,borderRadius:11,padding:"10px 14px",background:`linear-gradient(130deg,${b.c||"#fff"}14,rgba(0,0,0,0.35))`,border:`1px solid ${b.c||"#888"}1a`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
         <div><p style={{ fontSize:8,color:b.c||th.t2,fontWeight:700,letterSpacing:"0.12em",marginBottom:3 }}>{bN?.toUpperCase()}</p><p style={{ fontFamily:"monospace",fontSize:12,fontWeight:700,letterSpacing:"1.5px" }}>{f.num||"•••• •••• •••• ••••"}</p></div>
         <div style={{ textAlign:"right" }}><p style={{ fontSize:10,fontWeight:600 }}>{f.name||"—"}</p><p style={{ fontFamily:"monospace",fontSize:10,color:th.t3,marginTop:1 }}>{f.exp||"MM/YY"}</p></div>
       </div>
-      <div><Lbl>Ism familiya</Lbl><input value={f.name} onChange={e=>up("name",e.target.value.toUpperCase())} placeholder="ISLOMOV MANSUR" style={{ fontWeight:600 }}/></div>
-      <div><Lbl>Karta raqami</Lbl><input value={f.num} onChange={e=>up("num",fN(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19} style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,letterSpacing:"1.5px" }}/></div>
+      <div><Lbl>{t("cardm.name")}</Lbl><input value={f.name} onChange={e=>up("name",e.target.value.toUpperCase())} placeholder={t("cardm.phName")} style={{ fontWeight:600 }}/></div>
+      <div><Lbl>{t("cardm.num")}</Lbl><input value={f.num} onChange={e=>up("num",fN(e.target.value))} placeholder="0000 0000 0000 0000" maxLength={19} style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,letterSpacing:"1.5px" }}/></div>
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:9 }}>
-        <div><Lbl>Muddati</Lbl><input value={f.exp} onChange={e=>up("exp",fE(e.target.value))} placeholder="MM/YY" maxLength={5} style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,textAlign:"center" }}/></div>
-        <div><Lbl>CVV</Lbl><input value={f.cvv} onChange={e=>up("cvv",e.target.value.replace(/\D/g,"").slice(0,3))} placeholder="•••" maxLength={3} type="password" style={{ fontFamily:"monospace",fontSize:18,fontWeight:800,textAlign:"center",letterSpacing:"4px" }}/></div>
+        <div><Lbl>{t("cardm.exp")}</Lbl><input value={f.exp} onChange={e=>up("exp",fE(e.target.value))} placeholder="MM/YY" maxLength={5} style={{ fontFamily:"monospace",fontSize:16,fontWeight:700,textAlign:"center" }}/></div>
+        <div><Lbl>{t("cardm.cvv")}</Lbl><input value={f.cvv} onChange={e=>up("cvv",e.target.value.replace(/\D/g,"").slice(0,3))} placeholder="•••" maxLength={3} type="password" style={{ fontFamily:"monospace",fontSize:18,fontWeight:800,textAlign:"center",letterSpacing:"4px" }}/></div>
       </div>
       <Err msg={er}/>
-      <Btn onClick={go} full sz="lg"><Ic.Check/>Saqlash</Btn>
+      <Btn onClick={go} full sz="lg"><Ic.Check/>{t("cardm.save")}</Btn>
     </div>
   </Modal>;
 };
@@ -5015,15 +5011,15 @@ const CardsPage=()=>{
   const bc=(P.find(p=>p.id===c.pid)?.cards||[]).filter(x=>gBN(x)===c.bn);
   const pers=P.find(p=>p.id===c.pid);
   const addP=async()=>{
-    if(!nn.trim()){sNE("Ism kiriting");return;}
-    if(P.find(p=>p.name.toLowerCase()===nn.toLowerCase())){sNE("Bu nom bor");return;}
+    if(!nn.trim()){sNE(t("cards.needName"));return;}
+    if(P.find(p=>p.name.toLowerCase()===nn.toLowerCase())){sNE(t("cards.nameExists"));return;}
     try {
       const saved = await api.post("/people", { name: nn.trim() });
       sP(p=>[...p, saved]);
-      hap.ok(); toast({kind:"ok",title:"Shaxs qo'shildi",note:nn.trim()});
+      hap.ok(); toast({kind:"ok",title:t("cards.personAdded"),note:nn.trim()});
       sNN(""); sA(false); sNE("");
     } catch (e) {
-      hap.err(); sNE(e.message || "Serverga saqlanmadi");
+      hap.err(); sNE(e.message || t("cards.cardSaveErr"));
     }
   };
   const addB=n=>{const pid=c.pid;sM(null);setTimeout(()=>push({v:"c",pid,bn:n}),80);};
@@ -5035,10 +5031,10 @@ const CardsPage=()=>{
       const saved = await api.post(`/people/${c.pid}/cards`, card);
       sP(p=>p.map(x=>x.id===c.pid?{...x,cards:[...(x.cards||[]),saved]}:x));
       sFresh(saved.id); setTimeout(()=>sFresh(null),1500); hap.ok();
-      toast({kind:'ok',title:'Karta qo\'shildi',note:`•••• ${card.num.replace(/\s/g,'').slice(-4)}`});
+      toast({kind:"ok",title:t("cards.cardAdded"),note:`•••• ${card.num.replace(/\s/g,"").slice(-4)}`});
     } catch (e) {
       hap.err();
-      toast({kind:'err',title:"Serverga saqlanmadi",note:e.message});
+      toast({kind:"err",title:t("cards.cardSaveErr"),note:e.message});
     }
   };
   const delC=id=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:(x.cards||[]).filter(k=>k.id!==id)}:x));api.del(`/cards/${id}`).catch(()=>{});};
@@ -5058,20 +5054,20 @@ const CardsPage=()=>{
       <div style={{ display:"flex",alignItems:"center",gap:11 }}>
         {stk.length>1&&<button onClick={pop} style={{ width:34,height:34,borderRadius:9,...glass(th,0.04),color:th.t2,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${th.b1}`,flexShrink:0 }}><Ic.Left/></button>}
         <div style={{ flex:1 }}>
-          <h1 style={{ fontSize:22,fontWeight:800,letterSpacing:"-0.03em",lineHeight:1.15 }}>{c.v==="p"?"Kartalar":c.v==="b"?pers?.name:c.bn}</h1>
-          <p style={{ fontSize:12,color:th.t3,marginTop:2 }}>{c.v==="p"?`${P.length} shaxs · ${tot} karta`:c.v==="b"?`${gBs(pers).length} ta bank`:`${bc.length} ta karta`}</p>
+          <h1 style={{ fontSize:22,fontWeight:800,letterSpacing:"-0.03em",lineHeight:1.15 }}>{c.v==="p"?t("cards.title"):c.v==="b"?pers?.name:c.bn}</h1>
+          <p style={{ fontSize:12,color:th.t3,marginTop:2 }}>{c.v==="p"?tp("cards.sub", P.length, { m: tot }):c.v==="b"?t("cards.subBank",{n:gBs(pers).length}):t("cards.subCards",{m:bc.length})}</p>
         </div>
-        {c.v==="p"&&<Btn v={add?"ghost":"primary"} sz="sm" onClick={()=>{sA(!add);sNE("");}}>{add?"Bekor":<><Ic.Plus s={12}/>Shaxs</>}</Btn>}
-        {c.v==="c"&&<Btn sz="sm" onClick={e=>{markOrigin(e);sM("card");}}><Ic.Plus s={12}/>Karta</Btn>}
+        {c.v==="p"&&<Btn v={add?"ghost":"primary"} sz="sm" onClick={()=>{sA(!add);sNE("");}}>{add?t("common.cancel"):<><Ic.Plus s={12}/>{t("cards.addPerson")}</>}</Btn>}
+        {c.v==="c"&&<Btn sz="sm" onClick={e=>{markOrigin(e);sM("card");}}><Ic.Plus s={12}/>{t("cards.addCard")}</Btn>}
       </div>
       {c.v==="p"&&<>
         <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:9 }}>
-          <StatCard label="Kartalar" value={String(tot)} color={th.acc}/>
-          <StatCard label="Tayyor"   value={String(act)} color={act?th.ok:th.t3}/>
-          <StatCard label="Tugagan"  value={String(lim)} color={lim?th.err:th.t3}/>
+          <StatCard label={t("cards.statCards")} value={String(tot)} color={th.acc}/>
+          <StatCard label={t("cards.statReady")} value={String(act)} color={act?th.ok:th.t3}/>
+          <StatCard label={t("cards.statEnded")} value={String(lim)} color={lim?th.err:th.t3}/>
         </div>
         {add&&<div style={{ ...glass(th,0.05),borderRadius:12,padding:14,display:"flex",flexDirection:"column",gap:9,border:"1px solid rgba(255,159,10,0.18)" }}>
-          <div style={{ display:"flex",gap:9 }}><input value={nn} onChange={e=>sNN(e.target.value)} placeholder="Islomov Mansur" autoFocus onKeyDown={e=>e.key==="Enter"&&addP()} style={{ fontWeight:500 }}/><Btn onClick={addP} style={{ whiteSpace:"nowrap" }}>Yaratish</Btn></div>
+          <div style={{ display:"flex",gap:9 }}><input value={nn} onChange={e=>sNN(e.target.value)} placeholder={t("cards.phPerson")} autoFocus onKeyDown={e=>e.key==="Enter"&&addP()} style={{ fontWeight:500 }}/><Btn onClick={addP} style={{ whiteSpace:"nowrap" }}>{t("cards.create")}</Btn></div>
           <Err msg={ne}/>
         </div>}
         <div style={{ display:"flex",flexDirection:"column",gap:7 }}>
@@ -5080,7 +5076,7 @@ const CardsPage=()=>{
               <div style={{ width:36,height:36,borderRadius:9,background:th.s1,border:`1px solid ${th.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Ic.User s={15} c={th.t3}/></div>
               <div style={{ flex:1,minWidth:0 }}>
                 <p style={{ fontWeight:600,fontSize:13,letterSpacing:"-0.01em" }}>{p.name}</p>
-                <p style={{ fontSize:11,color:th.t3,marginTop:2 }}>{(p.cards||[]).length} karta · {bks.length} bank</p>
+                <p style={{ fontSize:11,color:th.t3,marginTop:2 }}>{tp("cards.rowNote", (p.cards||[]).length, { m: bks.length })}</p>
               </div>
               <div style={{ display:"flex",marginRight:3 }}>{bks.slice(0,3).map((bk,i)=><div key={bk.bid} style={{ marginLeft:i?-5:0,zIndex:3-i }}><Ava bid={bk.bid} n={22}/></div>)}{bks.length>3&&<div style={{ width:22,height:22,borderRadius:6,marginLeft:-5,...glass(th,0.05),display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:th.t3,fontWeight:600 }}>+{bks.length-3}</div>}</div>
               <Ic.Right s={13} c={th.t3}/>
@@ -5088,9 +5084,9 @@ const CardsPage=()=>{
           );})}
           {!P.length && (
             <Empty art="folder"
-              title="Hali shaxs yo'q"
-              note="Kartalar shaxslar ostiga yig'iladi. Birinchi shaxsni qo'shib boshlang."
-              action="Shaxs qo'shish"
+              title={t("cards.noPerson")}
+              note={t("cards.noPersonNote")}
+              action={t("cards.addPersonCta")}
               onAction={()=>{ sA(true); sNE(""); }}/>
           )}
         </div>
@@ -5104,23 +5100,23 @@ const CardsPage=()=>{
               <div style={{ height:2,background:th.b1,borderRadius:1,marginTop:6,width:80 }}><div style={{ height:"100%",borderRadius:1,background:bd.c,width:`${(bk.cards.filter(k=>cardHealth(k).left>0).length/bk.cards.length)*100}%`,transition:"width .4s" }}/></div>
             </div>
             <div style={{ textAlign:"right",flexShrink:0 }}>
-              <p style={{ fontSize:11,color:th.ok,fontWeight:600 }}>{bk.cards.filter(k=>cardHealth(k).left>0).length} tayyor</p>
-              <p style={{ fontSize:10,color:th.t3,marginTop:1 }}>{bk.cards.length} ta</p>
+              <p style={{ fontSize:11,color:th.ok,fontWeight:600 }}>{t("cards.readyCount",{n:bk.cards.filter(k=>cardHealth(k).left>0).length})}</p>
+              <p style={{ fontSize:10,color:th.t3,marginTop:1 }}>{t("cards.totalCount",{n:bk.cards.length})}</p>
             </div>
             <Ic.Right s={13} c={th.t3}/>
           </div></SwipeRow></div>
         );})}
         {!gBs(pers).length && (
           <Empty art="bank"
-            title="Bank yo'q"
-            note={`${pers.name} uchun birinchi bankni qo'shing, keyin kartalarni kiritasiz.`}
-            action="Bank qo'shish"
+            title={t("cards.noBank")}
+            note={t("cards.noBankNote",{n:pers.name})}
+            action={t("cards.addBank")}
             onAction={e=>{markOrigin(e);sM("bank");}}/>
         )}
         {gBs(pers).length>0 && <button onClick={e=>{markOrigin(e);sM("bank");}} style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"12px",borderRadius:13,border:`1px dashed ${th.b2}`,background:"transparent",color:th.t2,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:500,transition:"all .18s" }}
           onMouseEnter={e=>{e.currentTarget.style.background=th.s2;e.currentTarget.style.color=th.t1;}}
           onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=th.t2;}}>
-          <Ic.Plus s={13} c="currentColor"/>Bank qo'shish
+          <Ic.Plus s={13} c="currentColor"/>{t("cards.addBank")}
         </button>}
       </div>}
       {c.v==="c"&&<div style={{ display:"flex",flexDirection:"column",gap:7 }}>
@@ -5133,14 +5129,14 @@ const CardsPage=()=>{
           if (dead && fresh0) seenLimit.add(card.id);
           const slam = dead && fresh0;
           return (
-          <div key={card.id} data-item><SwipeRow label="Karta" onDelete={()=>{const el=document.querySelector(`[data-card="${card.id}"]`);const snap={...card};const pid=c.pid;toss(el,()=>{delC(card.id);sUndo({id:Date.now(),title:"Karta o'chirildi",note:`•••• ${t4}`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,snap]}:x))});});}}><CardFlip card={card}><div data-row data-card={card.id}
+          <div key={card.id} data-item><SwipeRow label="Karta" onDelete={()=>{const el=document.querySelector(`[data-card="${card.id}"]`);const snap={...card};const pid=c.pid;toss(el,()=>{delC(card.id);sUndo({id:Date.now(),title:t("cards.cardDeleted"),note:`•••• ${t4}`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,snap]}:x))});});}}><CardFlip card={card}><div data-row data-card={card.id}
             className={`${fresh===card.id?"land ":""}${slam?"jolt ":""}`}
             style={{ ...glass(th,0.04),borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:11,position:"relative",overflow:"hidden",transformStyle:"preserve-3d" }}>
 
             {fresh===card.id && <span className="sheen" style={{ position:"absolute",top:0,bottom:0,left:0,width:"48%",background:"linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)",pointerEvents:"none",zIndex:2 }}/>}
 
             {/* muhr */}
-            {dead && <Stamp text={H.state==="limit"?"Limit":"Eskirgan"} tone={H.state==="limit"?th.err:th.t3} animate={slam}/>}
+            {dead && <Stamp text={t(H.state==="limit"?"health.shortLimit":"health.shortExpired")} tone={H.state==="limit"?th.err:th.t3} animate={slam}/>}
 
             {/* xira qatlam */}
             {dead && <span className={slam?"dim":undefined} style={{ position:"absolute",inset:0,zIndex:5,pointerEvents:"none",background: th.id==="light"?"rgba(244,245,247,0.55)":"rgba(8,8,10,0.5)" }}/>}
@@ -5155,7 +5151,7 @@ const CardsPage=()=>{
               <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:6 }}>
                 <Pips used={H.used} cap={H.cap} tone={M.tone} dead={dead}/>
                 <span style={{ fontFamily:"'SF Mono',monospace",fontSize:10.5,color: dead?th.t4:M.tone, fontWeight:600 }}>
-                  {H.state==="expired" ? "—" : `${H.left} qoldi`}
+                  {H.state==="expired" ? "—" : t("health.left",{n:H.left})}
                 </span>
               </div>
             </div>
@@ -5164,16 +5160,16 @@ const CardsPage=()=>{
               <p style={{ fontFamily:"monospace",fontSize:12,fontWeight:700, color: H.state==="soon"?th.warn:H.state==="expired"?th.err:th.t1 }}>{card.exp}</p>
               <span style={{ display:"inline-flex",alignItems:"center",gap:4,marginTop:5 }}>
                 <span style={{ width:6,height:6,borderRadius:"50%",background:M.tone, boxShadow: dead?"none":`0 0 6px ${M.tone}66` }}/>
-                <span style={{ fontSize:9.5,color:M.tone,fontWeight:600,letterSpacing:"0.04em" }}>{M.short}</span>
+                <span style={{ fontSize:9.5,color:M.tone,fontWeight:600,letterSpacing:"0.04em" }}>{t(M.key)}</span>
               </span>
             </div>
           </div></CardFlip></SwipeRow></div>
         );})}
         {!bc.length && (
           <Empty art="card"
-            title="Karta yo'q"
-            note={`${c.bn} bankiga hali karta biriktirilmagan.`}
-            action="Karta qo'shish"
+            title={t("cards.noCard")}
+            note={t("cards.noCardNote",{n:c.bn})}
+            action={t("cards.addCardCta")}
             onAction={e=>{markOrigin(e);sM("card");}}/>
         )}
       </div>}
@@ -5259,7 +5255,7 @@ const LoginGate = ({ onDone }) => {
   const submit = () => {
     if (busy) return;
     if (!user.trim() || !pw) {
-      sErr("Login va parolni kiriting");
+      sErr(t("login.needAll"));
       sSh(true); setTimeout(()=>sSh(false),460);
       return;
     }
@@ -5297,7 +5293,7 @@ const LoginGate = ({ onDone }) => {
             <input type={seen?"text":"password"} value={pw} onChange={e=>sPw(e.target.value)}
               placeholder="••••••••" disabled={busy}
               onKeyDown={e=>e.key==="Enter"&&submit()} style={{ paddingRight:42 }}/>
-            <button onClick={()=>sSeen(v=>!v)} tabIndex={-1} aria-label="Parolni ko'rsatish"
+            <button onClick={()=>sSeen(v=>!v)} tabIndex={-1} aria-label={t("login.showPw")}
               style={{ position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",width:30,height:30,borderRadius:8,background:"transparent",border:"none",color:th.t3,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
               {seen
                 ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={th.t3} strokeWidth="1.6" strokeLinecap="round"><path d="M3 3l18 18M10.6 5.2A9.7 9.7 0 0112 5c5 0 9 4.5 9 7a11 11 0 01-2.6 3.6M6.3 6.9A11.5 11.5 0 003 12c0 2.5 4 7 9 7a9.5 9.5 0 004.2-1M9.9 9.9a3 3 0 004.2 4.2"/></svg>
@@ -5538,7 +5534,7 @@ const PullRefresh = ({ onRefresh, children }) => {
               opacity: prog>.2 || busy ? 1 : 0,
               transition:"opacity .2s, color .25s", whiteSpace:"nowrap",
             }}>
-              {done ? "Yangilandi" : load ? "Yangilanmoqda" : ready ? "Qo'yib yuboring" : "Torting"}
+              {done ? t("pull.done") : load ? t("pull.loading") : ready ? t("common.release") : t("pull.pull")}
             </span>
             {load && (
               <span className="sweep" style={{ position:"absolute", top:0, bottom:0, left:0, width:"45%",
@@ -5631,7 +5627,7 @@ const PinGate = ({ saved, onSet, onOpen }) => {
         if (next===first) { onSet(next); win(next); }
         else { sMode("create"); sFirst(""); fail("Kodlar mos kelmadi"); }
       }
-      else next===saved ? win(next) : fail("Kod noto'g'ri");
+      else next===saved ? win(next) : fail(t("pin.wrong"));
     }, 170);
   };
 
@@ -5647,11 +5643,11 @@ const PinGate = ({ saved, onSet, onOpen }) => {
     return ()=>window.removeEventListener("keydown", h);
   });
 
-  const title = mode==="create" ? "Kod yarating"
-              : mode==="repeat" ? "Kodni takrorlang" : "Kodni kiriting";
-  const note  = mode==="create" ? "Panelni himoyalash uchun 4 xonali kod"
-              : mode==="repeat" ? "Eslab qolish uchun yana bir marta"
-              : "PremoLux panelini ochish uchun";
+  const title = mode==="create" ? t("pin.create")
+              : mode==="repeat" ? t("pin.repeat") : t("pin.enter");
+  const note  = mode==="create" ? t("ob.note2")
+              : mode==="repeat" ? t("ob.note2b")
+              : t("pin.note");
 
   const merging = phase!=="idle";
   const sealed  = phase==="seal" || phase==="gone";
@@ -5793,7 +5789,7 @@ const Onboarding = ({ codes, onJoin }) => {
     setTimeout(()=>{
       if (!rep) { hap.select(); sFirst(nx); sPin(""); sRep(true); }
       else if (nx===first) { hap.ok(); sStep("code"); sPin(nx); }
-      else { hap.err(); sMsg("Kodlar mos kelmadi"); sBad(true); sRep(false); sFirst("");
+      else { hap.err(); sMsg(t("ob.mismatch")); sBad(true); sRep(false); sFirst("");
              setTimeout(()=>{ sBad(false); sPin(""); }, 540); }
     }, 170);
   };
@@ -5802,7 +5798,7 @@ const Onboarding = ({ codes, onJoin }) => {
   const submit = () => {
     const c = code.trim().toUpperCase();
     const inv = codes.find(x=>x.code===c);
-    if (!inv) { hap.err(); sMsg("Bunday kod topilmadi"); sBad(true); setTimeout(()=>sBad(false),540); return; }
+    if (!inv) { hap.err(); sMsg(t("ob.badCode")); sBad(true); setTimeout(()=>sBad(false),540); return; }
     hap.ok(); sSeal(true); sMsg("");
     setTimeout(()=>onJoin(inv, first || pin), 1500);
   };
@@ -5849,8 +5845,8 @@ const Onboarding = ({ codes, onJoin }) => {
         {/* ── KANAL ── */}
         {step==="channel" && (
           <div className="stepIn">
-            <Head n={1} title="Kanalga obuna bo'ling"
-              note="Yangilanishlar va e'lonlar shu kanalda chiqadi. Obuna majburiy."/>
+            <Head n={1} title={t("ob.title1")}
+              note={t("ob.note1")}/>
 
             <div style={{ ...glass(th,0.05), borderRadius:18, padding:"18px 16px", marginBottom:14 }}>
               <div style={{ display:"flex", alignItems:"center", gap:13 }}>
@@ -5864,7 +5860,7 @@ const Onboarding = ({ codes, onJoin }) => {
                 </span>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:15, fontWeight:700, letterSpacing:"-0.01em" }}>{CHANNEL}</p>
-                  <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>Rasmiy kanal</p>
+                  <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>{t("ob.official")}</p>
                 </div>
                 {chk==="ok" && <span className="tick2"><Ic.Check s={20} c={th.ok}/></span>}
               </div>
@@ -5872,12 +5868,12 @@ const Onboarding = ({ codes, onJoin }) => {
 
             <a href={`https://t.me/${CHANNEL.replace("@","")}`} target="_blank" rel="noreferrer"
               style={{ textDecoration:"none", display:"block", marginBottom:9 }}>
-              <Btn v="secondary" full sz="lg">Kanalni ochish</Btn>
+              <Btn v="secondary" full sz="lg">{t("ob.openChannel")}</Btn>
             </a>
             <Btn full sz="lg" onClick={check} disabled={chk!=="idle"}>
-              {chk==="wait" ? <><Ic.Spin s={14} c={th.accTxt}/>Tekshirilmoqda</>
-               : chk==="ok" ? <><Ic.Check s={14} c={th.accTxt}/>Tasdiqlandi</>
-               : "Obuna bo'ldim"}
+              {chk==="wait" ? <><Ic.Spin s={14} c={th.accTxt}/>{t("ob.checking")}</>
+               : chk==="ok" ? <><Ic.Check s={14} c={th.accTxt}/>{t("ob.confirmed")}</>
+               : t("ob.subscribed")}
             </Btn>
           </div>
         )}
@@ -5885,8 +5881,8 @@ const Onboarding = ({ codes, onJoin }) => {
         {/* ── PIN ── */}
         {step==="pin" && (
           <div className="stepIn">
-            <Head n={2} title={rep ? "Kodni takrorlang" : "Kod yarating"}
-              note={rep ? "Eslab qolish uchun yana bir marta" : "Panelni himoyalash uchun 4 xonali kod"}/>
+            <Head n={2} title={rep ? t("ob.title2b") : t("ob.title2")}
+              note={rep ? t("ob.note2b") : t("ob.note2")}/>
             <div className={bad?"shakeX":undefined} style={{ position:"relative", height:48,
               display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
               {[0,1,2,3].map(i=>{
@@ -5924,13 +5920,13 @@ const Onboarding = ({ codes, onJoin }) => {
                     <path className="ckLine" d="M20 6L9 17l-5-5"/>
                   </svg>
                 </span>
-                <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.03em" }}>Xush kelibsiz!</h1>
-                <p style={{ fontSize:13, color:th.t3, marginTop:7 }}>Panel ochilmoqda…</p>
+                <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.03em" }}>{t("ob.welcome")}</h1>
+                <p style={{ fontSize:13, color:th.t3, marginTop:7 }}>{t("ob.opening")}</p>
               </div>
             ) : (
               <>
-                <Head n={3} title="Taklif kodini kiriting"
-                  note="Kodni sizni taklif qilgan odam beradi."/>
+                <Head n={3} title={t("ob.title3")}
+                  note={t("ob.note3")}/>
                 <div className={bad?"shakeX":undefined} style={{ marginBottom:14 }}>
                   <input value={code} onChange={e=>sCode(fmt(e.target.value))}
                     placeholder="PLX-XXXX-XXXX-XXXX" autoCapitalize="characters" autoFocus
@@ -5943,7 +5939,7 @@ const Onboarding = ({ codes, onJoin }) => {
                   Tasdiqlash
                 </Btn>
                 <p style={{ textAlign:"center", fontSize:11.5, color:th.t4, marginTop:14, lineHeight:1.5 }}>
-                  Kodingiz yo'q bo'lsa {CHANNEL} ga murojaat qiling
+                  {t("ob.noCode",{ch:CHANNEL})}
                 </p>
               </>
             )}
@@ -5960,6 +5956,10 @@ const Onboarding = ({ codes, onJoin }) => {
 // ─────────────────────────────────────────────
 export default function App() {
   const [themeId, setThemeId] = useState("amoled");
+  // til — global o'zgaruvchida ham saqlanadi (t() undan o'qiydi),
+  // React esa qayta render qilish uchun state'dan foydalanadi
+  const [lang, setLangState] = useState(() => getLang());
+  const setLang = l => { setLangGlobal(l); setLangState(l); };
   const [page, setPage] = useState("premium");
   const [entered, setEntered] = useState(true);   // PIN qulfi olib tashlandi — doim ochiq
   const [pin, setPin] = useState(null);
@@ -6016,6 +6016,9 @@ export default function App() {
   const killToast = id => setToasts(l => l.filter(t => t.id !== id));
 
 
+  // <html lang> — ekran o'quvchi va tarjima kengaytmalari uchun
+  useEffect(()=>{ document.documentElement.lang = lang; }, [lang]);
+
   // Telegram oynasini to'liq ochish
   useEffect(()=>{ try { window.Telegram?.WebApp?.expand?.(); window.Telegram?.WebApp?.ready?.(); } catch {} },[]);
 
@@ -6034,12 +6037,12 @@ export default function App() {
           if (bootWarned.current) return;
           bootWarned.current = true;
           if (e.code === "NETWORK" || e.code === "TIMEOUT") {
-            setTimeout(()=>pushToast({ kind:"warn", title:"Server bilan aloqa yo'q",
-              note:"Ma'lumotlar vaqtinchalik saqlanadi", ms:3400 }), 900);
+            setTimeout(()=>pushToast({ kind:"warn", title:t("net.serverDown"),
+              note:t("net.serverDownNote"), ms:3400 }), 900);
           } else if (e.status === 401 || e.status === 403) {
             // Telegram ichida ochilishi kerak — brauzerda initData bo'lmaydi
-            setTimeout(()=>pushToast({ kind:"err", title:"Telegram orqali kiring",
-              note:"Ilova Telegram ichida ochilishi kerak", ms:4200 }), 900);
+            setTimeout(()=>pushToast({ kind:"err", title:t("net.telegramOnly"),
+              note:t("net.telegramOnlyNote"), ms:4200 }), 900);
           }
         });
         const raw = localStorage.getItem("premolux_v1");
@@ -6055,6 +6058,7 @@ export default function App() {
           if (d.codes)     setCodes(d.codes);
           if (d.hist?.length) setHist(d.hist);
           if (d.themeId)   setThemeId(d.themeId);
+          if (d.lang && LANGS.some(x=>x.id===d.lang)) { setLangGlobal(d.lang); setLangState(d.lang); }
           if (d.pin)       setPin(d.pin);
         }
       } catch {}
@@ -6081,12 +6085,12 @@ export default function App() {
     const t = setTimeout(()=>{
       try {
         localStorage.setItem("premolux_v1", JSON.stringify({
-          account, bots, people, cfg, role, partners, workers, themeId, pin, codes, hist,
+          account, bots, people, cfg, role, partners, workers, themeId, pin, codes, hist, lang,
         }));
       } catch {}
     }, 350);
     return ()=>clearTimeout(t);
-  }, [ready, account, bots, people, cfg, role, partners, workers, themeId, pin, codes, hist]);
+  }, [ready, account, bots, people, cfg, role, partners, workers, themeId, pin, codes, hist, lang]);
 
   // sahifa yo'nalishi: o'ngdagi tabga o'tsa chapdan sirg'aladi
   const ORDER = ["premium","bots","cards","team","stats","profile"];
@@ -6098,9 +6102,9 @@ export default function App() {
     try {
       const real = await api.get("/people");
       if (Array.isArray(real)) setPeople(real);
-      pushToast({ kind:"ok", title:"Yangilandi", ms:1500 });
+      pushToast({ kind:"ok", title:t("toast.refreshed"), ms:1500 });
     } catch (e) {
-      pushToast({ kind:"err", title:"Yangilanmadi", note:e.message, ms:2600 });
+      pushToast({ kind:"err", title:t("toast.refreshFail"), note:e.message, ms:2600 });
     }
   };
 
@@ -6160,7 +6164,7 @@ export default function App() {
               {page==="cards"   && <CardsPage/>}
               {page==="team"    && <TeamPage/>}
               {page==="stats"   && <StatsPage/>}
-              {page==="profile" && <ProfilePage themeId={themeId} setThemeId={setThemeId}/>}
+              {page==="profile" && <ProfilePage themeId={themeId} setThemeId={setThemeId} lang={lang} onLang={setLang}/>}
             </div>
           </PullRefresh>
         </main>
