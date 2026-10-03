@@ -20,6 +20,11 @@
 //   WS   /ws/orders/{id}?token=<initData>
 
 import { logErr } from "./logger";
+// DIQQAT: `t` ishlatilgan, lekin import qilinMAGAN edi — shuning uchun
+// xabar matni kerak bo'lgan har bir ApiError yaratilishida ReferenceError
+// chiqib, ilova butunlay yiqilardi. i18n.js boshqa modulni import qilmaydi,
+// shuning uchun bu import halqa (circular) hosil qilmaydi.
+import { t } from "./i18n";
 
 export const API_BASE = "https://premolux-beckend.onrender.com";
 // WebSocket manzili (backend /ws/orders/{id} endi token talab qiladi)
@@ -108,6 +113,14 @@ export const api = {
       throw e;
     }
   },
+  // Taklif kodini server'da tekshirish va BIR MARTALIK sarflash.
+  //
+  // MUHIM: avval frontend kodni FAQAT localStorage'da izlar edi —
+  // ya'ni kod faqat EGASINING qurilmasida mavjud bo'lardi, boshqa
+  // foydalanuvchi esa hech qanday kodni kiritib olmaydi. Endi
+  // backend'ning /auth/join endpoint'i chaqiriladi: u kodni haqiqiy
+  // tekshiradi va ishlatilganini belgilaydi (bir martalik).
+  join: async (code) => request("/auth/join", { method:"POST", body:{ code } }),
 };
 
 // ═════════════════════════════════════════════════════════════

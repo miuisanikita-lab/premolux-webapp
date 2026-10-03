@@ -260,4 +260,34 @@ describe("UI tuzilmasi", () => {
     expect(src).toMatch(/api\.get\("\/settings"/);
     expect(src).toMatch(/api\.put\("\/settings"/);
   });
+
+  // ── MAJBURIY OBUNA + BIR MARTALIK KOD ──
+  it("majburiy obuna ikkala kanalni ham tekshiradi", () => {
+    expect(src).toMatch(/REQUIRED_SUBS\.map/);          // ikkalasi ham chiziladi
+    expect(src).toMatch(/api\.checkSub\(\)/);            // haqiqiy server tekshiruvi
+  });
+
+  it("kod serverda tekshiriladi — FAQAT localStorage ga qarab emas", () => {
+    // eski xato: codes.find(...) — boshqa qurilmada kod topilmasdi
+    expect(src).toMatch(/api\.join\(/);                 // /auth/join chaqiriladi
+    expect(src).not.toMatch(/codes\.find\(x=>x\.code===c\)/);
+  });
+
+  it("ishlatilgan kod qayta qabul qilinmaydi", () => {
+    expect(src).toMatch(/codeUsed\(/);                  // mahalliy belgi tekshiriladi
+    expect(src).toMatch(/isUsedCodeError\(/);           // server xatosi
+    expect(src).toMatch(/markCodeUsed\(/);              // ro'yxat yangilanadi
+  });
+
+  it("gate ilovani to'liq qopadi (loading dan keyingi bosqich)", () => {
+    // gate alohida qatlamda emas, render oqimida — ilova orqasi ko'rinmaydi
+    expect(src).toMatch(/if \(!role\) return \(/);
+  });
+
+  it("kirish oqimi: loading -> obuna -> kod", () => {
+    // loading ekrani bo'sh qolmasin
+    expect(src).toMatch(/if \(!ready \|\| !introDone\) return <Splash/);
+    // obuna tekshirilgach kod bosqichiga o'tiladi
+    expect(src).toMatch(/goCode/);
+  });
 });

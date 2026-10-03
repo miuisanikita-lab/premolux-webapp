@@ -71,6 +71,79 @@ export const maskTail = (num) => `•••• ${last4(num) || "????"}`;
 /** Xotiradagi maxfiy qiymatni to'liq ko'rsatish kerakmi? */
 export const isMasked = (v) => /[•*]/.test(v || "") || /\*{2,}/.test(v || "");
 
+// ── taklif kodi (invite code) ────────────────────────────────
+
+/**
+ * Kodni yagona shaklga keltiradi (bir martalik kirish uchun).
+ * "plx ab12-cd34 ef56" -> "PLXAB12CD34EF56"  — tartib, registr va
+ * bo'shliq farqi muhim emas: foydalanuvchi qanday yozsa yozsin,
+ * kod topilishi kerak.
+ */
+export const normCode = (raw) =>
+  String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/**
+ * Kod KO'RINISHINI PLX-XXXX-XXXX-XXXX qilib chiqaradi (input uchun).
+ * Har 4 ta belgidan keyin chiziqcha qo'yiladi.
+ */
+export const fmtCode = (raw) => {
+  const all = normCode(raw);
+  const body = all.startsWith("PLX") ? all.slice(3) : all;
+  const parts = body.match(/.{1,4}/g) || [];
+  return ["PLX", ...parts].join("-");
+};
+
+/** Kiritish maydoniga to'liq sig'adigan kod uzunligi */
+export const CODE_LEN = 15;   // "PLX" + 12 ta belgi
+
+/** Kiritish tugmasi faolligi uchun minimal kod uzunligi */
+export const CODE_MIN = 11;
+
+/**
+ * Kod KIRILGANMI — bir martalik deb hisoblaymiz.
+ * "used" maydoni avval 0 (raqam) bo'lgan, endi true/false bo'ladi,
+ * shuning uchun ikkalasini ham tekshiramiz. Ishlatilgan kodni
+ * qayta ishlatishga urinish — bu xato.
+ */
+export const codeUsed = (inv) => !!(inv && (inv.used || Number(inv.used) > 0));
+
+/**
+ * Kodingiz ishlatilgan bo'lishi mumkin — bunda backend 400 qaytaradi
+ * ("ishlatilgan"). Bu matnni o'zbekcha ko'rsatish uchun.
+ */
+export const isUsedCodeError = (e) =>
+  e && (e.status === 400 || e.status === 409 || e.status === 403) &&
+  /used|ishlat|utilis|consumed|already/i.test(`${e.code || ""} ${e.message || ""} ${JSON.stringify(e.detail || "")}`);
+
+/**
+ * Kod noto'g'ri (topilmadi) — 404/401/422.
+ */
+export const isBadCodeError = (e) =>
+  e && (e.status === 404 || e.status === 401 || e.status === 422) &&
+  !isUsedCodeError(e);
+
+/**
+ * Serverda ishlatilgan kodni HEMMA qurilmada bir vaqtda belgilaydi.
+ * Shu bilan bir kod faqat BIR marta ishlaydi — ikkinchi foydalanuvchi
+ * "kod allaqal ishlatilgan" xatosini oladi.
+ * Natija: { ok, inv } | { ok:false, reason:"used"|"bad"|"server" }
+ */
+export const readJoinResult = (data) => {
+  const inv = (data && (data.invite || data.code_obj || data)) || null;
+  const kind = String(inv?.kind || inv?.role || "worker").toLowerCase();
+  // "worker" ishchi · "partner" hamkor · "owner" egasi
+  const role = kind === "partner" ? "partner" : kind === "owner" ? "owner" : "worker";
+  return { ok: true, role, kind, by: inv?.by || inv?.owner || null, inv };
+};
+
+/** Kiritilgan kodni mahalliy ro'yxatga BIR MARTALIK deb yozamiz */
+export const markCodeUsed = (list, code, who) => {
+  const n = normCode(code);
+  return (list || []).map(x =>
+    normCode(x.code) === n ? { ...x, used: true, usedBy: who || x.usedBy || null } : x
+  );
+};
+
 // ── zaxira nusxa (backup / restore) ──────────────────────────
 export const BACKUP_VERSION = 1;
 

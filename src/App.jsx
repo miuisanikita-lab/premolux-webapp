@@ -4,6 +4,8 @@ import { LANGS, t, tp, tArray, setLang as setLangGlobal, getLang } from "./i18n"
 import {
   som, last4, dayKey, last, bumpDay, cardHealth,
   DEFAULT_CARD_CAP, maskTail, isMasked, makeBackup, readBackup,
+  normCode, fmtCode, codeUsed, isUsedCodeError, isBadCodeError,
+  readJoinResult, markCodeUsed, CODE_MIN,
 } from "./core";
 // xatolarni yig'ish — avval 20 ta `catch {}` xatoni jimgina yo'qotardi
 import { logErr, tryOr, errorLog } from "./logger";
@@ -5797,7 +5799,7 @@ const Onboarding = ({ codes, onJoin }) => {
       if (res.ok) {
         sChk(c => c.map(() => "ok"));
         hap.ok();
-        setTimeout(()=>sStep("code"), 900);
+        setTimeout(goCode, 900);
       } else {
         // hali a'zo bo'lmaganlar bor — qaysilari ekanini ko'rsatamiz
         const missing = (res.missing || []).map(m => m.replace(/^@/, "").toLowerCase());
@@ -5817,21 +5819,61 @@ const Onboarding = ({ codes, onJoin }) => {
     }
   };
 
-  // ── 2. taklif kodi ──
-  const submit = () => {
-    const c = code.trim().toUpperCase();
-    const inv = codes.find(x=>x.code===c);
-    if (!inv) { hap.err(); sMsg(t("ob.badCode")); sBad(true); setTimeout(()=>sBad(false),540); return; }
-    hap.ok(); sSeal(true); sMsg("");
-    setTimeout(()=>onJoin(inv, ""), 1500);
+  // ── 2. taklif kodi — BIR MARTALIK ──
+  //
+  // AVVAL bu qator faqat localStorage'dagi ro'yxatga qaragan edi
+  // (codes.find). Ya'ni kod faqat EGASINING o'z qurilmasida mavjud
+  // bo'lardi — boshqa foydalanuvchi hech qanday kodni kiritib olmasdi.
+  // Endi:
+  //   1) mahalliy ro'yxatda bo'lsa — darhol qabul (eski tartib)
+  //   2) serverga yuboriladi — /auth/join haqiqiy tekshiradi va
+  //      kodni BIR MARTALIK sarflaydi
+  // Ishlatilgan kod qaytarilsa — "allaqal ishlatilgan" xabari.
+  const [busy, sBusy] = useState(false);
+
+  const fail = (msgKey) => {
+    hap.err(); sMsg(msgKey); sBad(true);
+    setTimeout(()=>sBad(false), 540);
   };
 
-  const fmt = v => {
-    const raw = v.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,15);
-    const body = raw.startsWith("PLX") ? raw.slice(3) : raw;
-    const parts = body.match(/.{1,4}/g) || [];
-    return ["PLX", ...parts].join("-");
+  const submit = async () => {
+    if (busy) return;
+    const raw = normCode(code);
+    if (raw.length < CODE_MIN) return fail(t("ob.codeShort"));
+
+    // ── mahalliy ro'yxat (eganing o'z qurilmasi) ──
+    const local = codes.find(x => normCode(x.code) === raw);
+    if (local && codeUsed(local)) return fail(t("ob.codeUsed"));
+    if (local) {
+      hap.ok(); sSeal(true); sMsg("");
+      setTimeout(()=>onJoin({ ...local, code: raw }), 1200);
+      return;
+    }
+
+    // ── server: haqiqiy va BIR MARTALIK tekshiruv ──
+    sBusy(true); sMsg("");
+    hap.tap();
+    try {
+      const data = await api.join(raw);
+      const r = readJoinResult(data);
+      hap.ok(); sSeal(true); sMsg("");
+      setTimeout(()=>onJoin({ ...r.inv, code: raw, kind: r.kind, by: r.by || "owner" }, r.role), 1200);
+    } catch (e) {
+      // ishlatilgan kod — ikkinchi marta kiritilmoqda
+      if (isUsedCodeError(e)) fail(t("ob.codeUsed"));
+      // noto'g'ri / topilmagan kod
+      else if (isBadCodeError(e)) fail(t("ob.badCode"));
+      // serverga ulanib bo'lmadi — MAHALLIY ro'yxatga qaytamiz,
+      // aks holda foydalanuvchi "noto'g'ri kod" deb o'ylab qolardi
+      else if (e.code === "NETWORK" || e.code === "TIMEOUT") fail(t("net.serverDown"));
+      else fail(e.message || t("ob.checkFail"));
+    } finally {
+      sBusy(false);
+    }
   };
+
+  // ── majburiy obuna END bo'lgach kodga o'tish ──
+  const goCode = () => { hap.select(); sStep("code"); };
 
   return (
     <div style={{
@@ -5938,15 +5980,21 @@ const Onboarding = ({ codes, onJoin }) => {
                 <OnboardHead n={2} title={t("ob.title3")}
                   note={t("ob.note3")}/>
                 <div className={bad?"shakeX":undefined} style={{ marginBottom:14 }}>
-                  <input value={code} onChange={e=>sCode(fmt(e.target.value))}
+                  <input value={code} onChange={e=>sCode(fmtCode(e.target.value))}
                     placeholder="PLX-XXXX-XXXX-XXXX" autoCapitalize="characters" autoFocus
                     onKeyDown={e=>e.key==="Enter"&&submit()}
                     style={{ fontFamily:"'SF Mono','Fira Code',monospace", fontSize:17,
                       fontWeight:700, textAlign:"center", letterSpacing:"1.4px", padding:"15px 12px",
                       borderColor: bad ? th.err : undefined }}/>
                 </div>
-                <Btn full sz="lg" onClick={submit} disabled={code.replace(/[^A-Z0-9]/g,"").length<15}>
-                  Tasdiqlash
+                {msg ? (
+                  <p style={{ textAlign:"center", fontSize:12.5, color:th.err,
+                    marginTop:-4, marginBottom:12, lineHeight:1.5 }}>{msg}</p>
+                ) : null}
+                <Btn full sz="lg" onClick={submit}
+                  disabled={busy || normCode(code).length < CODE_MIN}>
+                  {busy ? <><Ic.Spin s={14} c={th.accTxt}/>{t("ob.checkingCode")}</>
+                   : <>{t("ob.confirmCode")}</>}
                 </Btn>
                 <p style={{ textAlign:"center", fontSize:11.5, color:th.t4, marginTop:14, lineHeight:1.5 }}>
                   {t("ob.noCode",{ch:CHANNEL})}
@@ -6304,9 +6352,50 @@ export default function App() {
   };
   const theme = themes[themeId] || themes.amoled;
 
-  // ochilish ekrani: ma'lumat tayyor bo'lishi KUTILADI va kamida
-  // SPLASH_MIN ko'rinib turadi — keyin puflab o'chadi
+  // Bir martalik kod kiritilganda chaqiriladi. Bitta joyda yoziladi —
+  // mantiq takrorlanmasa, keyin biri esdan chiqib qoladi.
+  const join = (inv, serverRole) => {
+    const me = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    const nm = me ? [me.first_name, me.last_name].filter(Boolean).join(" ") : "Yangi foydalanuvchi";
+    // BIR MARTALIK: bu kod endi ishlatildi deb belgilanadi. Server'da
+    // ham sarflangan, lekin mahalliy ro'yxatni ham yangilash kerak —
+    // aks holda boshqa qurilmada kod qayta ishlatilsa, "ishlatilgan"
+    // xabosi chiqmasdi.
+    setCodes(l => markCodeUsed(l, inv.code, nm));
+    const id = me?.id ? String(me.id) : String(700000000 + Math.floor(Math.random()*99999999));
+    // server rolini afzal ko'ramiz (u haqiqiy), bo'lmasa kod turidan:
+    //   partner kod -> hamkor · worker kod -> ishchi
+    const kind = String(serverRole || inv.kind || "worker").toLowerCase();
+    if (kind === "partner") {
+      setRole("partner");
+      setPartners(l=>[...l, { id:"me", name:nm, tgId:id, share:10, balance:0, orders:0, goal:2000000, today:0, week:[0,0,0,0,0,0,0] }]);
+    } else if (kind === "owner") {
+      setRole("owner");
+    } else {
+      setRole("worker");
+      setWorkers(l=>[...l, { id:"me", name:nm, tag:"@"+(me?.username||"worker"), parent: inv.by,
+        online:true, today:0, ok:100, last:"hozir", week:[0,0,0,0,0,0,0] }]);
+    }
+    setEntered(true);
+  };
+
+  // ── 1. OCHILISH (loading) ekrani ──
+  // ma'lumot tayyor bo'lishi kutiladi va kamida SPLASH_MIN ko'rinib
+  // turadi — keyin puflab o'chadi
   if (!ready || !introDone) return <Splash theme={theme} done={ready && introDone} stage={bootStage}/>;
+
+  // ── 2. MAJBURIY OBUNA + BIR MARTALIK KOD ──
+  // Bu loading ekranidan keyingi bosqich. Ilova orqasida emas, uni
+  // TO'LIQ qopadi — kirmagan foydalanuvchi hech narsani ko'ra olmaydi
+  // va boshqa sahifaga o'ta olmaydi.
+  if (!role) return (
+    <ThemeCtx.Provider value={theme}>
+      <Css theme={theme}/>
+      <div className={cfg.calm ? "calm" : undefined}>
+        <Onboarding codes={codes} onJoin={join}/>
+      </div>
+    </ThemeCtx.Provider>
+  );
 
   return (
     <ThemeCtx.Provider value={theme}>
@@ -6314,26 +6403,6 @@ export default function App() {
     <ToastCtx.Provider value={pushToast}>
       <Css theme={theme}/>
       <OfflineBanner/>
-      {!role && (
-        <div className={cfg.calm ? "calm" : undefined}>
-        <Onboarding codes={codes}
-          onJoin={(inv)=>{
-            const me = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            const nm = me ? [me.first_name, me.last_name].filter(Boolean).join(" ") : "Yangi foydalanuvchi";
-            setCodes(l=>l.map(x=>x.code===inv.code?{...x,used:true,usedBy:nm}:x));   // bir martalik
-            const id = me?.id ? String(me.id) : String(700000000 + Math.floor(Math.random()*99999999));
-            if (inv.kind === "partner") {
-              setRole("partner");
-              setPartners(l=>[...l, { id:"me", name:nm, tgId:id, share:10, balance:0, orders:0, goal:2000000, today:0, week:[0,0,0,0,0,0,0] }]);
-            } else {
-              setRole("worker");
-              setWorkers(l=>[...l, { id:"me", name:nm, tag:"@"+(me?.username||"worker"), parent: inv.by,
-                online:true, today:0, ok:100, last:"hozir", week:[0,0,0,0,0,0,0] }]);
-            }
-            setEntered(true);
-          }}/>
-        </div>
-      )}
       {/* PIN qulfi olib tashlandi — foydalanuvchi so'ragan */}
       <ToastHost list={toasts} onKill={killToast}/>
       <div className={cfg.calm ? "calm" : undefined} style={{ position:"relative", zIndex:1, minHeight:"100vh", paddingBottom:118 }}>

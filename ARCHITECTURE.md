@@ -16,6 +16,7 @@ src/
 ├── core.test.js    Karta holati, sana, zaxira mantiqi
 ├── i18n.test.js    Lug'at to'liqligi
 ├── ui.test.jsx     ErrorBoundary, qo'shish oqimi, sozlamalar
+├── gate.test.jsx   Kirish gate: majburiy obuna + bir martalik kod
 └── sync.test.jsx   Server bilan sinxronlash
 ```
 
@@ -44,6 +45,30 @@ Bu ikki modul ilovaning eng barqaror qismi.
 
 **4. Backend bilan bog'liq narsalar faqat `api.js` da.**
 Server manzili, endpoint ro'yxati, haptika — hammasi shu yerda.
+
+**5. Taklif kodi — BIR MARTALIK, faqat server haqiqiy.**
+`POST /auth/join` chaqiriladi. Mahalliy ro'yxat (`codes`) faqat
+tezkorlik uchun; u boshqa qurilmada mavjud bo'lmaydi. Ishlatilgan
+kod qaytarilsa — "allaqal ishlatilgan" xabosi chiqadi.
+
+---
+
+## Kirish oqimi (gate)
+
+```
+loading (splash)  ->  majburiy obuna  ->  taklif kodi  ->  ilova
+   2.4 s animatsiya    @PremoLux kanal      bir martalik
+                       @Premolux_chat      POST /auth/join
+```
+
+Gate ilovani **to'liq qopadi**: kirmagan foydalanuvchi panelni
+ko'ra olmaydi. `role` yo'q bo'lsa `App` darhali `Onboarding`ni
+qaytaradi (`if (!role) return ...`), shuning uchun orada "teshib
+o'tish" yo'li qolmaydi.
+
+Obuna tekshiruvi `POST /auth/check-sub` — backend Telegram orqali
+haqiqiy a'zolikni tekshiradi. Egasi (`OWNER_TG_ID`) uchun obuna
+majburiyati ishlamaydi.
 
 ---
 

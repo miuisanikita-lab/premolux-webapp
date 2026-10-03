@@ -501,6 +501,9 @@ const uz = {
   "ob.badCode":         "Bunday kod topilmadi",
   "ob.welcome":         "Xush kelibsiz!",
   "ob.opening":         "Panel ochilmoqda…",
+  "ob.codeUsed":        "Bu kod allaqal ishlatilgan",
+  "ob.codeShort":       "Kod to'liq kiritilmagan",
+  "ob.checkingCode":    "Tekshirilmoqda",
 
   // ── Bo'sh ekranlar ──
   "empty.noPerson":     "Hali shaxs yo'q",
@@ -1057,6 +1060,9 @@ const ru = {
   "ob.badCode":         "Такой код не найден",
   "ob.welcome":         "Добро пожаловать!",
   "ob.opening":         "Открываем панель…",
+  "ob.codeUsed":        "Этот код уже использован",
+  "ob.codeShort":       "Код введён не полностью",
+  "ob.checkingCode":    "Проверяем",
 
   "empty.noPerson":     "Клиентов пока нет",
   "empty.noBank":       "Банков нет",
@@ -1611,6 +1617,9 @@ const en = {
   "ob.badCode":         "No such code",
   "ob.welcome":         "Welcome!",
   "ob.opening":         "Opening the panel…",
+  "ob.codeUsed":        "This code has already been used",
+  "ob.codeShort":       "The code is incomplete",
+  "ob.checkingCode":    "Checking",
 
   "empty.noPerson":     "No customers yet",
   "empty.noBank":       "No banks",

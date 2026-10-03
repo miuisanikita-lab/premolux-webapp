@@ -3,6 +3,8 @@ import {
   som, last4, dayKey, last, bumpDay,
   cardHealth, DEFAULT_CARD_CAP, maskTail, isMasked,
   makeBackup, readBackup, BACKUP_VERSION,
+  normCode, fmtCode, codeUsed, isUsedCodeError, isBadCodeError,
+  readJoinResult, markCodeUsed, CODE_MIN,
 } from "./core.js";
 
 // ─────────────────────────────────────────────
@@ -206,5 +208,83 @@ describe("zaxira nusxasi", () => {
     expect(r.ok).toBe(true);
     expect(r.data.people).toHaveLength(1);
     expect(r.data.people[0].id).toBe("p2");
+  });
+});
+
+// ─────────────────────────────────────────────
+// BIR MARTALIK TAKLIF KODI
+// Kiritish oqimi: 1) obuna tekshiruvi 2) kod — bir marta ishlatiladi
+// ─────────────────────────────────────────────
+describe("taklif kodi — bir martalik", () => {
+  const CODE = "PLXAB12CD34EF56";
+
+  it("normCode registr va bo'shliqni yo'qotadi", () => {
+    expect(normCode("plx-ab12 cd34 ef56")).toBe(CODE);
+    expect(normCode(" PLXAB12CD34EF56 ")).toBe(CODE);
+    expect(normCode(null)).toBe("");
+  });
+
+  it("fmtCode har 4 belgidan keyin chiziqcha qo'yadi", () => {
+    expect(fmtCode("plxab12cd34ef56")).toBe("PLX-AB12-CD34-EF56");
+    // "PLX" allaqachon yozilgan bo'lsa, takrorlanmaydi
+    expect(fmtCode("PLX-AB12-CD34-EF56")).toBe("PLX-AB12-CD34-EF56");
+  });
+
+  it("codeUsed eski (0) va yangi (true) shaklni ikkalasini ham ushlaydi", () => {
+    expect(codeUsed({ used: 0 })).toBe(false);
+    expect(codeUsed({ used: 1 })).toBe(true);
+    expect(codeUsed({ used: true })).toBe(true);
+    expect(codeUsed({})).toBe(false);
+    expect(codeUsed(null)).toBe(false);
+  });
+
+  it("ishlatilgan kod xatosi to'g'ri aniqlanadi", () => {
+    expect(isUsedCodeError({ status: 400, message: "Kod allaqal ishlatilgan" })).toBe(true);
+    expect(isUsedCodeError({ status: 409, message: "already used" })).toBe(true);
+    // noto'g'ri kod "ishlatilgan" deb hisoblanmasin
+    expect(isUsedCodeError({ status: 404, message: "topilmadi" })).toBe(false);
+  });
+
+  it("noto'g'ri kod xatosi to'g'ri aniqlanadi", () => {
+    expect(isBadCodeError({ status: 404, message: "Kod topilmadi" })).toBe(true);
+    expect(isBadCodeError({ status: 422, message: "invalid" })).toBe(true);
+    // tarmoq xatosi "noto'g'ri kod" bo'lib ketmasin
+    expect(isBadCodeError({ status: 0, code: "NETWORK" })).toBe(false);
+  });
+
+  it("server javobidan rol aniqlanadi", () => {
+    // ishchi kodi — oddiy foydalanuvchi ishchi bo'lib kiradi
+    expect(readJoinResult({ kind: "worker" }).role).toBe("worker");
+    expect(readJoinResult({ role: "partner" }).role).toBe("partner");
+    expect(readJoinResult({ kind: "owner" }).role).toBe("owner");
+    // kind yo'q bo'lsa — xavfsizlik uchun ishchi
+    expect(readJoinResult({}).role).toBe("worker");
+  });
+
+  it("server 'invite' ichida kodni qaytarsa ham rol olinadi", () => {
+    const r = readJoinResult({ invite: { kind: "partner", by: "owner" } });
+    expect(r.role).toBe("partner");
+    expect(r.by).toBe("owner");
+  });
+
+  it("markCodeUsed faqat berilgan koding o'zini belgilaydi", () => {
+    const list = [
+      { code: "PLX-AAAA-BBBB-CCCC", kind: "worker" },
+      { code: "PLX-DDDD-EEEE-FFFF", kind: "worker" },
+    ];
+    const out = markCodeUsed(list, "plx aaaa bbbb cccc", "Alisher");
+    expect(out[0].used).toBe(true);
+    expect(out[0].usedBy).toBe("Alisher");
+    expect(out[1].used).toBeUndefined();          // ikkinchisi tegilmadi
+  });
+
+  it("markCodeUsed belgisiz ro'yxatni ham ko'taradi", () => {
+    const out = markCodeUsed(undefined, "PLXAAAA", "Kim");
+    expect(out).toEqual([]);
+  });
+
+  it("CODE_MIN qisqa bo'lmagan kod talab qiladi", () => {
+    expect(CODE_MIN).toBeGreaterThanOrEqual(11);
+    expect(normCode("PLXAB12CD34EF56").length).toBeGreaterThanOrEqual(CODE_MIN);
   });
 });
