@@ -121,6 +121,17 @@ export const api = {
   // backend'ning /auth/join endpoint'i chaqiriladi: u kodni haqiqiy
   // tekshiradi va ishlatilganini belgilaydi (bir martalik).
   join: async (code) => request("/auth/join", { method:"POST", body:{ code } }),
+  // Owner uchun taklif kodini SERVERDA yaratish.
+  //
+  // Nima uchun kerak: /auth/join kodni bazadan izlaydi, lekin
+  // frontend kodi faqat localStorage'da yaratardi — ya'ni boshqa
+  // odam u kodni kiritganda "topilmadi" chiqardi. Shu endpoint
+  // backendga qo'shilgan (POST /auth/invites, faqat owner).
+  //
+  // Endpoint yo'q bo'lsa (404) — frontend mahalliy rejimga qaytadi,
+  // ya'ni ilova buzilmaydi, faqat kod faqat shu qurilmada ishlaydi.
+  createInvites: async (kind = "worker", count = 1) =>
+    request("/auth/invites", { method:"POST", body:{ kind, count } }),
 };
 
 // ═════════════════════════════════════════════════════════════

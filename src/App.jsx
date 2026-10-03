@@ -2787,6 +2787,8 @@ const TeamPage = () => {
 
   const [tab,sTab]   = useState(isOwner ? "partners" : "workers");
   const [open,sOpen] = useState(null);
+  // kod yaratilayotgan payt — tugma ikki marta bosilmasin
+  const [making,sMaking] = useState(false);
 
   const myWorkers = isOwner ? workers : workers.filter(w=>w.parent===me);
   const myCodes   = codes.filter(c => c.kind===(tab==="partners"?"partner":"worker") && (isOwner ? c.by==="owner" : c.by===me));
@@ -2795,12 +2797,43 @@ const TeamPage = () => {
   const today  = myWorkers.reduce((a,w)=>a+w.today,0);
   const pToday = partners.reduce((a,p)=>a+p.today+workers.filter(w=>w.parent===p.id).reduce((b,w)=>b+w.today,0),0);
 
-  const gen = () => {
+  // ── TAKLIF KODI YARATISH ──
+  //
+  // MUHIM: bu kod boshqa odamda ISHLASHI uchun SERVERDA bo'lishi kerak
+  // (/auth/join bazadan izlaydi). Avval kod faqat localStorage'da
+  // yaratilardi — ya'ni owner brauzerida ko'rinardi, lekin boshqa
+  // kish kiritganda "topilmadi" chiqardi.
+  //
+  // Endi: avval serverga so'rov yuboriladi. Endpoint yo'q bo'lsa
+  // yoki server o'chgan bo'lsa — mahalliy rejimga qaytamiz va owner
+  // ga ogohlantirish ko'rsatamiz (ilova buzilmaydi).
+  const gen = async () => {
+    if (making) return;
     const kind = tab==="partners" ? "partner" : "worker";
-    const c = { code: makeCode(kind), kind, by: isOwner ? "owner" : me, used:0, at:Date.now() };
-    setCodes(l=>[c,...l]);
-    hap.ok();
-    toast({ kind:"ok", title:t("team.codeMade"), note:t("team.codeMadeNote"), ms:2600 });
+    sMaking(true);
+    try {
+      const r = await api.createInvites(kind, 1);
+      const made = Array.isArray(r?.codes) ? r.codes : [];
+      if (!made.length) throw new Error("Server kod qaytarmadi");
+      const list = made.map(code => ({
+        // server chiziqchasiz saqlaydi (== solishtiruvi uchun) —
+        // ko'rsatish uchun chiziqchalarni qo'shamiz
+        code: fmtCode(code), kind: r.kind || kind,
+        by: isOwner ? "owner" : me, used:false, at:Date.now(),
+      }));
+      setCodes(l => [...list, ...l]);
+      hap.ok();
+      toast({ kind:"ok", title:t("team.codeMade"), note:t("team.codeMadeNote"), ms:2600 });
+    } catch (e) {
+      // serverda yaratib bo'lmadi — eski mahalliy rejim
+      const c = { code: makeCode(kind), kind, by: isOwner ? "owner" : me, used:false, at:Date.now() };
+      setCodes(l=>[c,...l]);
+      hap.warn();
+      toast({ kind:"warn", title:t("team.codeMadeLocal"), note:t("team.codeMadeLocalNote"), ms:4200 });
+      logErr("invites/create", e);
+    } finally {
+      sMaking(false);
+    }
   };
   const drop = code => { setCodes(l=>l.filter(c=>c.code!==code)); hap.warn(); toast({kind:"warn",title:t("team.codeDropped")}); };
 

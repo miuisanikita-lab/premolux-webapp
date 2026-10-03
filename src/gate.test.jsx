@@ -61,6 +61,10 @@ const stubFetch = ({ subOk = true, join } = {}) => {
     if (path === "/settings") return Promise.resolve(jsonResponse({ streams: 8 }));
     if (path === "/auth/verify") return Promise.resolve(jsonResponse({ ok: true }));
     if (path === "/people") return Promise.resolve(jsonResponse([]));
+    if (path === "/auth/invites") {
+      return Promise.resolve(jsonResponse(
+        { ok: true, kind: "partner", codes: ["PLXAB12CD34EF56"] }));
+    }
     return Promise.resolve(jsonResponse({}));
   };
   return calls;
@@ -204,4 +208,118 @@ describe("gate — allaqachon kirmagan foydalanuvchi", () => {
     expect(el.querySelectorAll("nav button").length).toBeGreaterThanOrEqual(5);
     await act(async () => { root.unmount(); });
   }, 20000);
+});
+
+// ─────────────────────────────────────────────
+// OWNER KOD YARATADI
+//
+// Kod boshqa odamda ishlashi uchun SERVERDA bo'lishi kerak —
+// /auth/join bazadan izlaydi. Bu test shu server yo'lini tekshiradi.
+// ─────────────────────────────────────────────
+describe("owner — taklif kodi yaratish", () => {
+  const bootOwner = () => localStorage.setItem("premolux_v1", JSON.stringify({
+    lang: "uz", role: "owner", cfg: { nOk: true, nErr: true, nLimit: true, daily: false },
+  }));
+
+  // Jamoa sahifasi va "Kod yaratish" tugmasi
+  const openTeam = async (el, root) => {
+    const nav = [...el.querySelectorAll("nav button")];
+    const team = nav.find(b => /Jamoa/.test(b.textContent || "")) || nav[3];
+    await click(team);
+    await wait(200);
+  };
+  const makeBtn = (el) => findByText(el, /Kod yaratish/);
+
+  it("kod serverda yaratiladi — boshqa odamda ishlaydi", async () => {
+    bootOwner();
+    const calls = stubFetch();
+    const { el, root, text } = await mount();
+    await wait(2700);
+    await openTeam(el, root);
+
+    const btn = makeBtn(el);
+    expect(btn).toBeTruthy();
+    await click(btn);
+    await wait(700);
+
+    // serverga so'rov ketdi
+    expect(calls).toContain("POST /auth/invites");
+    // server bergan kod chiziqchali ko'rinadi (PLX-XXXX-XXXX-XXXX)
+    expect(text()).toMatch(/PLX-AB12-CD34-EF56/);
+    await act(async () => { root.unmount(); });
+  }, 25000);
+
+  it("endpoint yo'q bo'lsa ilova buzilmaydi — mahalliy rejim", async () => {
+    bootOwner();
+    // backend hali yangilanmagan: /auth/invites -> 404
+    const calls = stubFetch();
+    globalThis.fetch = (url, opt = {}) => {
+      const path = String(url).replace(/^https?:\/\/[^/]+/, "");
+      const method = opt.method || "GET";
+      calls.push(`${method} ${path}`);
+      if (path === "/auth/invites") {
+        return Promise.resolve(jsonResponse({ detail: "Not Found" }, 404));
+      }
+      if (path === "/auth/check-sub") return Promise.resolve(jsonResponse({ ok: true }));
+      if (path === "/settings") return Promise.resolve(jsonResponse({ streams: 8 }));
+      if (path === "/auth/verify") return Promise.resolve(jsonResponse({ ok: true }));
+      if (path === "/people") return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({}));
+    };
+
+    const { el, root, text } = await mount();
+    await wait(2700);
+    await openTeam(el, root);
+    await click(makeBtn(el));
+    await wait(700);
+
+    // kod baribir yaratildi + owner ogohlantirildi
+    expect(text()).toMatch(/PLX-/);
+    expect(text()).toMatch(/faqat SHU qurilmada ishlaydi/);
+    await act(async () => { root.unmount(); });
+  }, 25000);
+
+  it("backend bitta 400 qaytarsa — xabar ikkala holatni ham qamrab oladi", async () => {
+    // backend noto'g'ri va ishlatilgan kod uchun BIR XIL xato beradi
+    bootOwner();
+    stubFetch();
+    const { el, root } = await mount();
+    await wait(2700);
+    await openTeam(el, root);
+    await click(makeBtn(el));
+    await wait(700);
+
+    // endi yangi foydalanuvchi sifatida kod kiritamiz
+    await act(async () => { root.unmount(); });
+    localStorage.clear();
+    setLang("uz");
+
+    const calls = [];
+    globalThis.fetch = (url, opt = {}) => {
+      const path = String(url).replace(/^https?:\/\/[^/]+/, "");
+      calls.push(`${(opt.method || "GET")} ${path}`);
+      if (path === "/auth/check-sub") return Promise.resolve(jsonResponse({ ok: true }));
+      if (path === "/auth/join") {
+        return Promise.resolve(jsonResponse(
+          { detail: "Kod noto'g'ri yoki allaqachon ishlatilgan" }, 400));
+      }
+      if (path === "/settings") return Promise.resolve(jsonResponse({ streams: 8 }));
+      if (path === "/auth/verify") return Promise.resolve(jsonResponse({ ok: true }));
+      if (path === "/people") return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({}));
+    };
+
+    const m = await mount();
+    await wait(2700);
+    await click(findByText(m.el, /Obuna bo'ldim/));
+    await wait(1200);
+    await typeInto(m.el.querySelector("input"), "PLXAB12CD34EF56");
+    await click(findByText(m.el, /^Tasdiqlash$/));
+    await wait(800);
+
+    // xato "noto'g'ri" va "ishlatilgan" ni ikkalasini ham aytadi
+    expect(m.text()).toMatch(/noto'g'ri yoki allaqal ishlatilgan/);
+    expect(m.el.querySelectorAll("nav button").length).toBe(0);
+    await act(async () => { m.root.unmount(); });
+  }, 30000);
 });

@@ -1,0 +1,279 @@
+From 54dbb367082001cc87004f18c56c814691deacdc Mon Sep 17 00:00:00 2001
+From: dev <dev@local>
+Date: Sat, 3 Oct 2026 21:49:54 +0000
+Subject: [PATCH] Taklif kodlarini serverda yaratish: POST /auth/invites (faqat
+ owner)
+
+Kod chiziqchasiz saqlanadi (InviteCode.code == payload.code bilan
+aniq solishtiriladi), prefiks PLX=hamkor / PLW=ishchi.
+---
+ app/__pycache__/__init__.cpython-310.pyc      | Bin 0 -> 135 bytes
+ app/__pycache__/main.cpython-310.pyc          | Bin 0 -> 1524 bytes
+ app/api/__pycache__/__init__.cpython-310.pyc  | Bin 0 -> 139 bytes
+ .../__pycache__/__init__.cpython-310.pyc      | Bin 0 -> 146 bytes
+ .../invites_router.cpython-310.pyc            | Bin 0 -> 3634 bytes
+ app/api/routes/invites_router.py              | 106 ++++++++++++++++++
+ app/main.py                                   |   4 +-
+ 7 files changed, 109 insertions(+), 1 deletion(-)
+ create mode 100644 app/__pycache__/__init__.cpython-310.pyc
+ create mode 100644 app/__pycache__/main.cpython-310.pyc
+ create mode 100644 app/api/__pycache__/__init__.cpython-310.pyc
+ create mode 100644 app/api/routes/__pycache__/__init__.cpython-310.pyc
+ create mode 100644 app/api/routes/__pycache__/invites_router.cpython-310.pyc
+ create mode 100644 app/api/routes/invites_router.py
+
+diff --git a/app/__pycache__/__init__.cpython-310.pyc b/app/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ae0c34ae456c2a97821e3ec150e23e519c5475b
+GIT binary patch
+literal 135
+zcmd1j<>g`kf~#c*vq1D?5P=LBfgA@QE@lA|DGb33nv8xc8Hzx{2;!HPeo1bDes*R~
+zzJ5VbYHof`X@zc5VsdtBUW$HVL4kgJd}dx|NqoFsLFFwDo80`A(wtN~kQv2HK!Sw<
+E0Ao%aIsgCw
+
+literal 0
+HcmV?d00001
+
+diff --git a/app/__pycache__/main.cpython-310.pyc b/app/__pycache__/main.cpython-310.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..3bb700ec947db5ec8eac1de88eb39fb44ad5dade
+GIT binary patch
+literal 1524
+zcmZuxPmkj?6t|N!P17W8=l{+C$^i+Aw4E;Euv#Gmtb`Z|h7~KZB0{R%*wdyH$HjK$
+z&kCej?Ox}`32~S?a^f=}zD163fv>Pag6GV%6of55{oZ?y-}8GvM}(n|VElCY^XzvQ
+zq2G+MI>3hBho#=b2vL+Eim8=jZY35r*v@V4Bu<T;yusbXt#Ko7axd|CD`{~*@p(IG
+z^B@U$n1nn^BHl?lyqk1+FX`3$-F%I&C+mD8*{JnqzR9<eEsU5;J!TzQv_<_F&U2h>
+zGmExqz_w|4X(u~uXLg4<G@9V$>RduTZ0Bm1d9%H1e2ZHv*k8fz6&$SKa0N#zxU+)0
+z3q0Fpz1be^(%vQ11!BKK*RC;LryDO2<oqh#e2n^A<uO#!e<T?fpOk0un54(7pz*I4
+z-^D};m7T}OnatEQF3PVpQQ5%v57cx*VqL0f?RntGae0!ZLKZQZ&j*}j#RCBG-Mf<I
+zf=~c+A$5FzI2`(aKseOLRr4dF^aqa)07ef#`~2~z8KpTpC6a+<ov8C7O+}&EndYP*
+z6DIq9)h4B$j-)6xlT|1rWl}BF0Ai8zh1NP<Iy#DJofVU%AtY(a)KYDag<dM*oQZkP
+z7RLmXjmybGi?ZS*(`>Q1Z&fZUCRxEM=R=}Q-mWI&oT<u&>!(1@<*)#?U_At&z5?*f
+z(&!3bqj%5&Q21l?{pPp$8+>JHd*;j<*Z9VY(G&1GFrV8COVPe}`;B`26o_Qzm#`@M
+zqL$E9eAsto2clGsF@ppvPnN~VlvH+&)#FSPN;IkbR5GI3h~#<Sl5584K-r5Qk=z00
+zWg9NCZyGw7pI2U<9Wga0g*il-H)>t1xm)<nzkEyXn(e`oN6^`)jeCRPVA!{-hR$@(
+zs^$swD-%V%x596MCxpP_bR=X3X{v<^=}iS)s#8Wxr=K?VP5(`q=aL;|XD{)73Q_+x
+zY|wszr2-Jou=z7k`v(h(;vC97uvL~ghR!t=lfYS4xk?kDa(&(ZiaTb%BZbg!n<E_%
+z)&<=44FHGz*Q(}dL`6CpRm~$HGnr@7^tsx;)dqaY=>fbBB~5Zr@*7&`*;twrtH?YW
+z_;^qgTge6(rTNFnrV*YIhC9+!T(*rcmy@9p5eRq}Z~{bN13Iqze$!^(n7N=VSF&d|
+zn;zXXIU<yf{z<O_YNvTgm&A8(ADKO2y1wrJmd1M*PA_w2{=-P!2jQT=4RC;mRu`mY
+YcX8x9wuPN~x_<^u<6WIy%d;c=H)ZpUfdBvi
+
+literal 0
+HcmV?d00001
+
+diff --git a/app/api/__pycache__/__init__.cpython-310.pyc b/app/api/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..61bc2362c72e0696f36c3f6ffc78563c14480ef5
+GIT binary patch
+literal 139
+zcmd1j<>g`kf~#c*vq1D?5P=LBfgA@QE@lA|DGb33nv8xc8Hzx{2;!HXeo1bDes*R~
+zzJ5VbYHof`X@zc5VsdtBUW$HVK>-kF>c_`t=4F<|$LkeT-r}&y%}*)KNwou+Q_KV;
+GSQr53uO6oW
+
+literal 0
+HcmV?d00001
+
+diff --git a/app/api/routes/__pycache__/__init__.cpython-310.pyc b/app/api/routes/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..d648de8a417baa3ae32749794930d5b8f22111f7
+GIT binary patch
+literal 146
+zcmd1j<>g`kf~#c*vq1D?5P=LBfgA@QE@lA|DGb33nv8xc8Hzx{2;!Hieo1bDes*R~
+zzJ5VbYHof`X@zc5VsdtBUW$HVK>-kF>KEmgmZTQz$H!;pWtPOp>lIYq;;_lhPbtkw
+NwF4Pf%mgG@7y#-VA%6e>
+
+literal 0
+HcmV?d00001
+
+diff --git a/app/api/routes/__pycache__/invites_router.cpython-310.pyc b/app/api/routes/__pycache__/invites_router.cpython-310.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..02730b4a5ec2e924efcf8b109c1a7b1463e4f57e
+GIT binary patch
+literal 3634
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/app/api/routes/invites_router.py b/app/api/routes/invites_router.py
+new file mode 100644
+index 0000000..499816a
+--- /dev/null
++++ b/app/api/routes/invites_router.py
+@@ -0,0 +1,106 @@
++"""
++INVITES ROUTER — owner taklif kodlarini YARATADI.
++
++Nima uchun kerak:
++  /auth/join  bazadagi `invite_codes` jadvalidan kodni tekshiradi va
++  `used=True` qilib BIR MARTALIKlikni ta'minlaydi. Lekin backendda
++  kod YARATISH yo'li umuman yo'q edi — frontend esa kodni faqat
++  localStorage'da yaratardi. Natijada: owner brauzerida kod ko'rardi,
++  lekin boshqa odam shu kodni kiritganda /auth/join "Kod noto'g'ri"
++  deb rad etardi.
++
++Bu endpoint owner'ga serverda haqiqiy kod yaratish imkonini beradi.
++Endpoint yo'q bo'lsa ham frontend ishlaydi (eski tartib) — shuning
++uchun bu backend'ga bir martalik qo'shimcha, majburiy emas.
++"""
++import secrets
++
++from fastapi import APIRouter, Depends, HTTPException
++from pydantic import BaseModel
++from sqlalchemy import select
++from sqlalchemy.ext.asyncio import AsyncSession
++
++from app.core.config import settings
++from app.core.db import get_db
++from app.core.security import get_current_user
++from app.models.tables import InviteCode, Role, User
++
++router = APIRouter(tags=["auth"])
++
++
++class InviteCreateIn(BaseModel):
++    kind: str = "worker"          # "worker" | "partner"
++    count: int = 1                # birdaniga bir nechta
++
++
++def _is_owner(user: User) -> bool:
++    """Faqat egasi kod yarata oladi."""
++    if user.role == Role.owner:
++        return True
++    if settings.owner_tg_id and int(user.tg_id) == int(settings.owner_tg_id):
++        return True
++    return False
++
++
++def _make_code(kind: str = "worker") -> str:
++    """
++    Kodni CHIZIQCHASIZ saqlaydi: "PLXAB12CD34EF56" (15 belgi).
++
++    Nima uchun chiziqchasiz: frontend kiritilgan kodni normCode() bilan
++    tozalab yuboradi, backend esa `InviteCode.code == payload.code` bilan
++    SOLISHTIRADI (oddiy `==`). Bazada chiziqchali saqlansa, hech qanday
++    kod hech qachon topilmasdi.
++
++    Chiziqchalar faqat KO'RSATISH uchun — frontend fmtCode() qo'shadi.
++
++    Prefiks: PLX — hamkor, PLW — ishchi (frontendning eski makeCode()
++    tartibi bilan mos, shuning uchun ikki tomon ham bir xil ko'rinadi).
++    """
++    pre = "PLX" if kind == "partner" else "PLW"
++    return pre + secrets.token_hex(6).upper()      # 3 + 12 = 15 belgi
++
++
++@router.post("/invites")
++async def create_invites(
++    payload: InviteCreateIn,
++    db: AsyncSession = Depends(get_db),
++    owner: User = Depends(get_current_user),
++):
++    """
++    Owner uchun bir yoki bir nechta taklif kodi yaratadi.
++
++    Qaytaradi:
++      {"codes": ["PLXAB12CD34EF56", ...], "kind": "worker"}
++
++    403 — foydalanuvchi egasi emas
++    """
++    if not _is_owner(owner):
++        raise HTTPException(403, "Kod yaratish faqat egaga ochiq")
++
++    kind = (payload.kind or "worker").lower()
++    if kind not in ("worker", "partner"):
++        raise HTTPException(422, "kind faqat 'worker' yoki 'partner' bo'lishi kerak")
++
++    try:
++        count = max(1, min(int(payload.count), 20))
++    except (TypeError, ValueError):
++        count = 1
++
++    made = []
++    for _ in range(count):
++        # takrorlanish oldi va olish — uniq indeks buni himoya qiladi,
++        # lekin urinishni oldindan olib tashlaymiz
++        code = _make_code(kind)
++        for _try in range(5):
++            clash = (await db.execute(
++                select(InviteCode).where(InviteCode.code == code)
++            )).scalars().first()
++            if not clash:
++                break
++            code = _make_code(kind)
++
++        db.add(InviteCode(code=code, kind=kind, created_by=owner.id, used=False))
++        made.append(code)
++
++    await db.commit()
++    return {"ok": True, "kind": kind, "codes": made}
+diff --git a/app/main.py b/app/main.py
+index 4591ce7..9f89520 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -8,7 +8,7 @@ from fastapi import FastAPI
+ from fastapi.middleware.cors import CORSMiddleware
+ from contextlib import asynccontextmanager
+ 
+-from app.api.routes import auth_router, orders_router, relay_router, ws_router, settings_router, access_router, bots_router, people_router, debug_router
++from app.api.routes import auth_router, orders_router, relay_router, ws_router, settings_router, access_router, bots_router, people_router, debug_router, invites_router
+ from app.core.db import engine, Base
+ from app.models import tables  # noqa — barcha jadvallarni ro'yxatdan o'tkazadi
+ 
+@@ -43,6 +43,8 @@ app.include_router(access_router.router)
+ app.include_router(bots_router.router)
+ app.include_router(people_router.router)
+ app.include_router(debug_router.router)
++# owner uchun taklif kodi yaratish (POST /auth/invites)
++app.include_router(invites_router.router, prefix="/auth")
+ 
+ 
+ @app.get("/")
+-- 
+2.55.0
+

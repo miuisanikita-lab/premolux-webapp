@@ -230,6 +230,22 @@ describe("taklif kodi — bir martalik", () => {
     expect(fmtCode("PLX-AB12-CD34-EF56")).toBe("PLX-AB12-CD34-EF56");
   });
 
+  it("fmtCode ishchi prefiksini (PLW) SAQLAYDI", () => {
+    // AVVAL bu yerda xato bor edi: har doim "PLX" qo'yilardi, ya'ni
+    // PLW bilan boshlangan ishchi kodi kiritilganda BUZILARDI va
+    // hech qachon topilmasdi.
+    expect(fmtCode("plwab12cd34ef56")).toBe("PLW-AB12-CD34-EF56");
+    expect(fmtCode("PLW-AB12-CD34-EF56")).toBe("PLW-AB12-CD34-EF56");
+    // prefiks bo'lmasa — standart PLX
+    expect(fmtCode("ab12cd34ef56")).toBe("PLX-AB12-CD34-EF56");
+  });
+
+  it("PLW va PLX kodlari bir-biriga aralashmaydi", () => {
+    // backend PLW=ishchi, PLX=hamkor deb saqlaydi
+    expect(normCode(fmtCode("PLWAB12CD34EF56"))).toBe("PLWAB12CD34EF56");
+    expect(normCode(fmtCode("PLXAB12CD34EF56"))).toBe("PLXAB12CD34EF56");
+  });
+
   it("codeUsed eski (0) va yangi (true) shaklni ikkalasini ham ushlaydi", () => {
     expect(codeUsed({ used: 0 })).toBe(false);
     expect(codeUsed({ used: 1 })).toBe(true);

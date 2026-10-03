@@ -85,12 +85,18 @@ export const normCode = (raw) =>
 /**
  * Kod KO'RINISHINI PLX-XXXX-XXXX-XXXX qilib chiqaradi (input uchun).
  * Har 4 ta belgidan keyin chiziqcha qo'yiladi.
+ *
+ * MUHIM: prefiks SAQLANADI. Ishchi kodi "PLW" bilan boshlanadi —
+ * avval har doim "PLX" qo'yilardi, shuning uchun PLW bilan boshlangan
+ * kod kiritilganda buzilib, hech qachon topilmas edi.
  */
 export const fmtCode = (raw) => {
   const all = normCode(raw);
-  const body = all.startsWith("PLX") ? all.slice(3) : all;
+  const m = /^(PLX|PLW)/.exec(all);
+  const pre = m ? m[1] : "PLX";
+  const body = m ? all.slice(3) : all;
   const parts = body.match(/.{1,4}/g) || [];
-  return ["PLX", ...parts].join("-");
+  return [pre, ...parts].join("-");
 };
 
 /** Kiritish maydoniga to'liq sig'adigan kod uzunligi */
