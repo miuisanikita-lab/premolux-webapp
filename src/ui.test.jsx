@@ -218,4 +218,20 @@ describe("UI tuzilmasi", () => {
   it("o'chirish tugmasi qator ustida yo'q", () => {
     expect(src).not.toMatch(/const kill = \(\) =>/);
   });
+
+  it("karta CVV va to'liq raqam localStorage'ga yozilmaydi", () => {
+    // `people` ga qo'shiladigan obyekt to'liq kartani YOYMASLIGI kerak
+    // (yoysa CVV va to'liq raqam localStorage ga tushib ketadi)
+    expect(src).not.toMatch(/\{\s*\.\.\.card\s*,/);
+    // niqoblash funksiyasi bor va ishlatiladi
+    expect(src).toMatch(/const maskPanNum = /);
+    expect(src).toMatch(/num:\s*maskPanNum\(card\.num\)/);
+    // to'liq ma'lumot faqat xotiradagi qutiga yoziladi
+    expect(src).toMatch(/SECRETS\.set\(/);
+  });
+
+  it("sozlamalar server bilan sinxronlanadi", () => {
+    expect(src).toMatch(/api\.get\("\/settings"/);
+    expect(src).toMatch(/api\.put\("\/settings"/);
+  });
 });

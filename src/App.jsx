@@ -5142,6 +5142,12 @@ const Stamp = ({ text, tone, animate }) => (
 // ── to'liq karta ma'lumotlari (faqat xotirada, localStorage'da EMAS) ──
 const SECRETS = new Map();
 
+// raqamni niqoblash — backend people_router._card_out bilan BIR XIL
+const maskPanNum = (num) => {
+  const full = String(num || "").replace(/\s/g, "");
+  return full.length >= 8 ? `${full.slice(0,4)} •••• •••• ${full.slice(-4)}` : "••••";
+};
+
 const rememberSecret = (id, num, cvv, exp, name) => {
   if (!id) return;
   SECRETS.set(id, { num:(num||"").replace(/\s/g,""), cvv:cvv||"", exp:exp||"", name:name||"" });
@@ -5489,12 +5495,25 @@ const CardsPage=()=>{
   };
   const addB=n=>{const pid=c.pid;sM(null);setTimeout(()=>push({v:"c",pid,bn:n}),80);};
 const addC = card => {
-  // MUHIM: to'liq raqam/CVV localStorage'ga YOZILMAYDI (masih
-  // localSecret qutisi orqali faqat xotirada saqlanadi) — serverga
-  // yuboriladi va nusxalash uchun xotirada qoladi.
   const tmpId = "tmpc_" + Date.now().toString(36);
-  const clean = { ...card, id: tmpId, syncing: true };
-  rememberSecret(card.id || tmpId, card.num, card.cvv, card.exp, card.name);
+
+  // 1) to'liq ma'lumot — FAQAT xotirada (sahifa yopilganda yo'qoladi)
+  rememberSecret(tmpId, card.num, card.cvv, card.exp, card.name);
+
+  // 2) ro'yxatga (va demak localStorage ga) — FAQAT niqoblangan versiya.
+  //    Backend ham aynan shunday qaytaradi (people_router._card_out),
+  //    shuning uchun endi holatlar mos keladi va maxfiy ma'lumot
+  //    brauzer xotirasiga yozilmaydi.
+  const clean = {
+    id: tmpId,
+    bankId: card.bankId,
+    num: maskPanNum(card.num),
+    exp: card.exp,
+    name: card.name,
+    limit: card.limit,
+    used: 0,
+    syncing: true,
+  };
 
   sP(p=>p.map(x=>x.id===c.pid?{...x,cards:[...(x.cards||[]),clean]}:x));
   sFresh(tmpId); setTimeout(()=>sFresh(null),1500); hap.ok();
@@ -5502,6 +5521,8 @@ const addC = card => {
   toast({kind:"ok",title:t("cards.cardAdded"),note:`•••• ${card.num.replace(/\s/g,"").slice(-4)}`});
 
   api.post(`/people/${c.pid}/cards`, card).then(saved=>{
+    // server NIQOBLAGAN raqamni qaytaradi — ro'yxatga aynan shu
+    // yoziladi, to'liq raqam esa SECRETS qutida qoladi
     sP(p=>p.map(x=>x.id===c.pid
       ? { ...x, cards:(x.cards||[]).map(k=>k.id===tmpId ? { ...saved, syncing:false } : k) }
       : x));
@@ -6600,6 +6621,12 @@ export default function App() {
       setReady(true);
 
       // ── 3. FONDA server bilan sinxronlash ──
+      // Sozlamalarni serverdan olishni shu yerga, verify BILAN
+      // BIRRGA ketma-ket qilib olamiz. Alohida effektda bo'lsa,
+      // StrictMode da mount effekti ikki marta ishlab, mahalliy
+      // sozlamalarni server qiymati USTIGA qayta yozib ketardi.
+      const settingsP = api.get("/settings").catch(() => null);
+
       try {
         await api.post("/auth/verify", {}).catch(e=>{
           if (bootWarned.current) return;
@@ -6614,13 +6641,27 @@ export default function App() {
           }
         });
 
+        const sv = await settingsP;
+        const serverHasCfg = !!(sv && typeof sv === "object");
+        if (serverHasCfg) {
+          const next = {};
+          for (const k of SETTINGS_KEYS) if (sv[k] !== undefined) next[k] = sv[k];
+          // server holatini eslab qolamiz — keyingi o'zgarishlar
+          // faqat shundan FARQ qilsa yuboriladi
+          cfgServer.current = pickCfg(next);
+          setCfg(c => ({ ...c, ...next }));
+        }
+
         const raw = localStorage.getItem("premolux_v1");
         const d = raw ? JSON.parse(raw) : null;
         if (d) {
           if (d.account  !== undefined) setAccount(d.account);
           if (d.bots)      setBots(d.bots);
           if (d.people)    setPeople(d.people);
-          if (d.cfg)     { setCfg(c=>({ ...c, ...d.cfg })); setHaptic(d.cfg.haptic !== false); }
+          // server javob BERGAN bo'lsa — uning qiymati ustiga yozmaymiz
+          // (aks holda StrictMode da mahalliy qiymat server ustiga tushib qolardi)
+          if (d.cfg && !serverHasCfg) { setCfg(c=>({ ...c, ...d.cfg })); }
+          if (d.cfg) setHaptic(d.cfg.haptic !== false);
           if (d.role)      setRole(d.role);
           if (d.partners)  setPartners(d.partners);
           if (d.workers)   setWorkers(d.workers);
@@ -6642,6 +6683,56 @@ export default function App() {
       } catch {}
     })();
   },[]);
+
+  // ══════════════════════════════════════════════════════════
+  // SOZLAMALARNI SERVER BILAN SINXRONLASH
+  // ══════════════════════════════════════════════════════════
+  // Backendda GET/PUT /settings bor va order_service.py "streams"
+  // qiymatidan foydalangan holda Lane'larni Semaphore bilan
+  // cheklaydi. Lekin frontend sozlamalarni faqat localStorage da
+  // saqlar edi — server hech qachon xabar bermagan, shuning uchun
+  // "Bir vaqtda oqim" har doim server standarti (8) bo'lib qolardi.
+  //
+  // Endi: ochilishda serverdan olinadi, o'zgarishda serverga yuboriladi.
+  // cfgSync oqimi:
+  //   boot  — ilova birinchi marta ochildi (hech narsa yuborilmaydi)
+  //   skip  — qiymat serverdan keldi (yana yuborilmasligi kerak)
+  //   idle  — foydalanuvchi o'zgartirdi -> serverga yuboriladi
+  const SETTINGS_KEYS = ["streams","retry","cardCap","maskPan","nOk","nLimit","nErr","daily","dailyAt","haptic","calm"];
+
+  const pickCfg = (c) => {
+    const o = {};
+    for (const k of SETTINGS_KEYS) o[k] = c[k];
+    return o;
+  };
+
+  // Serverdagi OXIRGI ma'lum holat. Faqat shu bilan FARQ qilsakgina
+  // serverga yuboramiz — shu yo'l bilan:
+  //   · ilova birinchi ochilganda hech narsa yuborilmaydi
+  //   · serverdan olgan qiymat qayta yuborilmaydi (ping-pong yo'q)
+  //   · StrictMode da effektning ikki marta ishlashi muammosiz
+  const cfgServer = useRef(null);
+  const cfgBusy   = useRef(false);
+
+  // foydalanuvchi o'zgartirsa — serverga yuboramiz
+  useEffect(()=>{
+    // serverdan hali olmaganmiz — yuborishning ma'nosi yo'q
+    if (!ready || !cfgServer.current) return;
+
+    const cur = pickCfg(cfg);
+    // server bilan farq yo'q — hech narsa yubormaymiz
+    if (JSON.stringify(cur) === JSON.stringify(cfgServer.current)) return;
+    if (cfgBusy.current) return;
+
+    const id = setTimeout(()=>{
+      cfgBusy.current = true;
+      api.put("/settings", { ...cur, pin:false, lockAfter:5 })   // PIN olib tashlangan
+        .then(sv=>{ if (sv && typeof sv === "object") cfgServer.current = pickCfg(sv); })
+        .catch(()=>{ /* serverga yetkazib bo'lmasa — mahalliy qoladi */ })
+        .finally(()=>{ cfgBusy.current = false; });
+    }, 700);
+    return ()=>clearTimeout(id);
+  }, [ready, ...SETTINGS_KEYS.map(k=>cfg[k])]);
 
   // ── o'zgarishlarni saqlash ──
   useEffect(()=>{
