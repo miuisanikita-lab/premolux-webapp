@@ -45,6 +45,7 @@ const uz = {
   "common.holdIt":      "Bosib turing — {what}",
   "common.of":          " / {n}",
   "common.release":     "Qo'yib yuboring",
+  "swipe.hint":        "Chapga suring",
 
   // ── xato / tarmoq ──
   "err.title":          "Xatolik yuz berdi",
@@ -257,6 +258,7 @@ const uz = {
   "card.flip.cvv":      "CVV",
   "card.flip.exp":      "Muddat",
   "card.flip.owner":    "Egasi",
+  "card.flip.hint":     "Karta ma'lumotlarini ko'rish uchun bosing",
 
   // ── Jamoa sahifasi ──
   "team.title":         "Jamoa",
@@ -384,6 +386,7 @@ const uz = {
   "set.pin":            "PIN qulfi",
   "set.pinNote":        "Ilva ochilganda kod so'raladi",
   "set.pinOff":         "O'chirilgan",
+  "set.pinTelegram":    "Telegram'da",
   "set.pinOffNote":     "Telegram'ning o'z qulfiga o'ting",
   "set.pinReset":       "Kodni o'zgartirish",
   "set.pinResetNote":   "Keyingi ochilishda yangi kod so'raladi",
@@ -559,6 +562,7 @@ const ru = {
   "common.holdIt":      "Удерживайте — {what}",
   "common.of":          " / {n}",
   "common.release":     "Отпустите",
+  "swipe.hint":        "Смахните влево",
 
   "err.title":          "Произошла ошибка",
   "err.unknown":        "Неизвестная ошибка",
@@ -761,6 +765,7 @@ const ru = {
   "card.flip.cvv":      "CVV",
   "card.flip.exp":      "Срок",
   "card.flip.owner":    "Владелец",
+  "card.flip.hint":     "Нажмите, чтобы посмотреть данные карты",
 
   "team.title":         "Команда",
   "team.subOwner":      "Присоединение по коду приглашения",
@@ -882,6 +887,7 @@ const ru = {
   "set.pin":            "PIN-код",
   "set.pinNote":        "Запрашивать код при открытии",
   "set.pinOff":         "Отключено",
+  "set.pinTelegram":    "В Telegram",
   "set.pinOffNote":     "Используйте блокировку самого Telegram",
   "set.pinReset":       "Сменить код",
   "set.pinResetNote":   "Новый код будет запрошен при следующем открытии",
@@ -1053,6 +1059,7 @@ const en = {
   "common.holdIt":      "Keep holding — {what}",
   "common.of":          " / {n}",
   "common.release":     "Let go",
+  "swipe.hint":        "Swipe left",
 
   "err.title":          "Something went wrong",
   "err.unknown":        "Unknown error",
@@ -1255,6 +1262,7 @@ const en = {
   "card.flip.cvv":      "CVV",
   "card.flip.exp":      "Expiry",
   "card.flip.owner":    "Owner",
+  "card.flip.hint":     "Tap to see the card details",
 
   "team.title":         "Team",
   "team.subOwner":      "People join with an invite code",
@@ -1376,6 +1384,7 @@ const en = {
   "set.pin":            "PIN lock",
   "set.pinNote":        "Ask for a code when opening",
   "set.pinOff":         "Off",
+  "set.pinTelegram":    "In Telegram",
   "set.pinOffNote":     "Use Telegram's own lock instead",
   "set.pinReset":       "Change the code",
   "set.pinResetNote":   "A new code will be asked on the next open",

@@ -191,6 +191,37 @@ const Css = ({ theme }) => {
     }
     input::placeholder{color:${theme.t4};}
 
+    /* <a> elementi tugma ko'rinishida — <button> ichida <button> bo'lmasligi uchun */
+    .linkBtn{ align-items:center; justify-content:center; gap:7px; cursor:pointer;
+      font-family:inherit; font-weight:700; letter-spacing:-0.01em; }
+    .linkBtn:active{ transform:scale(.985); }
+
+    /* ── klaviatura fokusi ──
+       Oldin butun ilovada :focus-visible yo'q edi: klaviatura bilan
+       yurganingizda qayerda turganingiz ko'rinmasdi. Faqat sichqoncha
+       uchun :focus ko'rsatiladi (bosilganda chiziq chiqmasin). */
+    :focus{outline:none}
+    :focus-visible{
+      outline:2px solid ${theme.acc};
+      outline-offset:2px;
+      border-radius:10px;
+    }
+    /* klaviatura bilan bosilganda "bosilgan" effekti kerak emas */
+    button:focus:not(:focus-visible){outline:none}
+
+    /* ── harakat kamaytirish ──
+       .calm klassi faqat CSS animatsiyalarini sekinlashtiradi;
+       JS bilan boshqariladigan animatsiyalar (Count, toss) ham
+       "Harakatni kamaytirish" sozlamasiga bo'ysunishi uchun
+       useCountUp o'z vaqtini oladi. */
+    @media (prefers-reduced-motion: reduce){
+      .calm *, .calm *::before, .calm *::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.01ms !important;
+      }
+    }
+
     @keyframes _up  {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     @keyframes _in  {from{opacity:0;transform:scale(.95) translateY(5px)}to{opacity:1;transform:none}}
     @keyframes _fd  {from{opacity:0}to{opacity:1}}
@@ -681,10 +712,51 @@ const growVars = () => {
   };
 };
 
+// ── MODAL / SHEET uchun umumiy xatti-harakat ──
+// Escape bilan yopish, orqa fonni scroll qilmaslik, fokusni oynada ushlab
+// turish va ekran o'quvchilar uchun belgilar. Ikkalasi ham shu hook'ni ishlatadi.
+const useOverlay = (onClose) => {
+  const box = useRef(null);
+
+  useEffect(()=>{
+    // orqa fon scroll bo'lmasin
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    // oyna ochilganda fokus ichkariga tushsin
+    const first = box.current?.querySelector(
+      "button:not([disabled]), input, textarea, select, a[href], [tabindex]:not([tabindex='-1'])"
+    );
+    if (first) { try { first.focus({ preventScroll:true }); } catch {} }
+
+    const h = e => {
+      if (e.key === "Escape") { e.stopPropagation(); onClose?.(); return; }
+      // fokus oynadan chiqib ketmasin (oddiy trap)
+      if (e.key !== "Tab" || !box.current) return;
+      const f = [...box.current.querySelectorAll(
+        "button:not([disabled]), input:not([disabled]), textarea, select, a[href], [tabindex]:not([tabindex='-1'])"
+      )].filter(x => x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length-1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    window.addEventListener("keydown", h, true);
+    return ()=>{
+      window.removeEventListener("keydown", h, true);
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  return box;
+};
+
 const Modal = ({ children, onClose }) => {
   const th = useTheme();
+  const box = useOverlay(onClose);
   return <div className="f" onClick={onClose} style={{ position:"fixed",inset:0,zIndex:9999,background: th.id==="light" ? "rgba(30,34,44,0.4)" : "rgba(0,0,0,0.72)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
-    <div className="grow" onClick={e=>e.stopPropagation()} style={{ ...glass(th,0.07,48),borderRadius:20,width:"100%",maxWidth:380,boxShadow:"0 32px 80px rgba(0,0,0,0.8)", ...growVars() }}>
+    <div ref={box} className="grow" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true"
+      style={{ ...glass(th,0.07,48),borderRadius:20,width:"100%",maxWidth:380,boxShadow:"0 32px 80px rgba(0,0,0,0.8)", ...growVars() }}>
       {children}
     </div>
   </div>;
@@ -697,7 +769,10 @@ const MH = ({ title, sub, onClose }) => {
       <p style={{ fontWeight:700,fontSize:14,letterSpacing:"-0.02em" }}>{title}</p>
       {sub && <p style={{ fontSize:11,color:th.t3,marginTop:1 }}>{sub}</p>}
     </div>
-    <button onClick={onClose} style={{ width:26,height:26,borderRadius:7,background:th.s1,border:`1px solid ${th.b1}`,color:th.t3,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}><Ic.X/></button>
+    <button onClick={onClose} aria-label={t("common.close")}
+      style={{ width:34,height:34,borderRadius:10,background:th.s1,border:`1px solid ${th.b1}`,color:th.t3,
+               cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+               margin:-9, WebkitTapHighlightColor:"transparent" }}><Ic.X/></button>
   </div>;
 };
 
@@ -903,9 +978,11 @@ const useToss = (th) => {
 // ── BOTTOM SHEET ──────────────────────────
 const Sheet = ({ title, icon, children, onClose }) => {
   const th = useTheme();
+  const box = useOverlay(onClose);
   return (
     <div className="f" onClick={onClose} style={{ position:"fixed",inset:0,zIndex:9999,background: th.id==="light" ? "rgba(30,34,44,0.35)" : "rgba(0,0,0,0.6)",backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",display:"flex",alignItems:"flex-end",justifyContent:"center" }}>
-      <div className="sh" onClick={e=>e.stopPropagation()} style={{
+      <div ref={box} className="sh" onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true"
+        aria-label={typeof title === "string" ? title : undefined} style={{
         width:"100%",maxWidth:520,
         background:th.bg2,
         borderTop:`1px solid ${th.b2}`,
@@ -1577,7 +1654,7 @@ const Toast = ({ t: item, onKill }) => {
 };
 
 const ToastHost = ({ list, onKill }) => (
-  <div style={{
+  <div role="status" aria-live="polite" aria-atomic="false" style={{
     position:"fixed", top:"calc(12px + env(safe-area-inset-top,0px))", left:0, right:0, zIndex:9500,
     display:"flex", flexDirection:"column", alignItems:"center", gap:8,
     padding:"0 16px", pointerEvents:"none",
@@ -1746,6 +1823,14 @@ const SwipeRow = ({ children, onDelete, label, disabled }) => {
     }
   };
 
+  // tugma orqali o'chirish — surish bilan bir xil natija
+  const kill = () => {
+    if (disabled || dying) return;
+    hap.heavy(); sArm(false); armR.current = false;
+    sDying(true); sDx(0);
+    setTimeout(onDelete, 210);
+  };
+
   const p = Math.min(1, Math.abs(dx)/FULL);
 
   return (
@@ -1768,7 +1853,7 @@ const SwipeRow = ({ children, onDelete, label, disabled }) => {
           opacity: arm ? 1 : 0,
           transform:`translateX(${arm?0:10}px)`,
           transition:"opacity .18s, transform .22s cubic-bezier(.2,.9,.3,1)",
-        }}>{t("common.release")}</span>
+        }}>{arm ? t("common.release") : t("swipe.hint")}</span>
 
         <span className={arm?"revealPulse":undefined} style={{
           width:32, height:32, borderRadius:10, flexShrink:0,
@@ -1783,8 +1868,24 @@ const SwipeRow = ({ children, onDelete, label, disabled }) => {
         </span>
       </div>
 
+      {/* o'chirish tugmasi: avval faqat chapga surish mumkin edi —
+          sichqoncha yoki klaviatura bilan o'chirib bo'lmasdi */}
+      {!disabled && (
+        <button
+          onClick={kill} aria-label={`${label || t("common.delete")} — ${t("common.delete")}`}
+          style={{
+            position:"absolute", zIndex:3, top:"50%", right:6, transform:"translateY(-50%)",
+            width:34, height:34, borderRadius:10, cursor:"pointer",
+            background:`${th.err}14`, border:`1px solid ${th.err}33`, color:th.err,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            opacity: dx > 4 ? 0 : .55, pointerEvents: dx > 4 ? "none" : "auto",
+            transition:"opacity .18s",
+            WebkitTapHighlightColor:"transparent",
+          }}><Ic.Trash s={15} c={th.err}/></button>
+      )}
+
       <div className="swipeRow"
-        aria-label={label || t("common.delete")}
+        role="group" aria-label={label || t("common.delete")}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end} onTouchCancel={end}
         style={{
           transform:`translateX(${dx}px)`,
@@ -1930,7 +2031,8 @@ const Gala = ({ total, onClose }) => {
   useEffect(()=>{
     hap.ok();
     const a = setTimeout(()=>hap.press(), 260);
-    const b = setTimeout(()=>{ sOut(true); setTimeout(onClose, 320); }, 3600);
+    // 3.6 s o'qish uchun yetarli emas edi (xabarni o'qib bo'lmay qolardi)
+    const b = setTimeout(()=>{ sOut(true); setTimeout(onClose, 320); }, 5200);
     return ()=>{ clearTimeout(a); clearTimeout(b); };
   },[]);
 
@@ -2832,7 +2934,7 @@ const PayPanel = ({ partners, workers, onClose }) => {
           : t("pay.shutNote",{h:PAY_FROM,t:left()})}
       </p>
 
-      <HoldBtn tone={open ? th.warn : th.t3}
+      <HoldBtn tone={open ? th.warn : th.t3} disabled={!due}
         label={due ? t("pay.accept",{n:som(due)}) : t("pay.noAccount")}
         done={()=>{ if(due) onClose(); }}/>
     </div>
@@ -2921,7 +3023,7 @@ const PartnerSheet = ({ p, workers, onPrice, onSettle, onClose }) => {
               color: due ? th.warn : th.t3, letterSpacing:"-0.02em" }}>{som(due)}</span>
           </div>
 
-          <HoldBtn tone={th.warn}
+          <HoldBtn tone={th.warn} disabled={!due}
             label={due ? t("ps.accept",{n:som(due)}) : t("ps.noBill")}
             done={()=>{ if(due){ onSettle(p.id); onClose(); } }}/>
         </div>
@@ -3393,8 +3495,15 @@ const AppSheet = () => {
 
         {phase==="done" && (
           <span className="eUp" style={{ marginTop:2 }}>
-            <a href={CHUTE_URL} download style={{ textDecoration:"none" }}>
-              <Btn v="ghost" sz="sm">{t("app.redownload")}</Btn>
+            {/* eslatma: avval <a> ichida <Btn> (ya'ni <button>) bor edi —
+                bu HTML xatosi va brauzerlarda link bosilishi ishonchli emas.
+                Endi <a> o'zi tugma ko'rinishiga ega. */}
+            <a href={CHUTE_URL} download className="linkBtn" style={{
+              display:"inline-flex", padding:"7px 13px", fontSize:12, borderRadius:9,
+              background:"transparent", border:`1px solid ${th.b1}`, color:th.t2,
+              fontWeight:700, textDecoration:"none",
+            }}>
+              {t("app.redownload")}
             </a>
           </span>
         )}
@@ -4242,6 +4351,7 @@ const useCountUp = (target, ms=780) => {
     const a = from.current, b = num, t0 = performance.now();
     if (a === b) { sV(b); return; }
 
+    if (ms <= 0) { from.current = num; sV(num); return; }
     const tick = now => {
       const p = Math.min(1, (now - t0) / ms);
       // yumshoq to'xtash + ozgina oshib qaytish
@@ -4261,7 +4371,11 @@ const useCountUp = (target, ms=780) => {
 
 const Count = ({ value, style }) => {
   const num  = /^-?\d+$/.test(String(value));
-  const shown = useCountUp(num ? Number(value) : 0);
+  // "Harakatni kamaytirish" yoniq bo'lsa raqam darhol ko'rinadi —
+  // aks holda bu sozlama faqat CSS ga ta'sir qilib, JS animatsiyalari
+  // (sanoqlar, "otish" effekti) o'z-o'zidan o'chmay qolardi
+  const { cfg } = useContext(DataCtx) || {};
+  const shown = useCountUp(num ? Number(value) : 0, cfg?.calm ? 0 : 780);
   if (!num) return <span className="numIn" key={value} style={style}>{value}</span>;
   return <span style={{ ...style, fontVariantNumeric:"tabular-nums" }}>{shown}</span>;
 };
@@ -4270,12 +4384,12 @@ const Count = ({ value, style }) => {
 // ═════════════════════════════════════════
 // SOZLAMA ELEMENTLARI
 // ═════════════════════════════════════════
-const Switch = ({ on, onChange, tone }) => {
+const Switch = ({ on, onChange, tone, label }) => {
   const th = useTheme();
   const c  = tone || th.acc;
   return (
     <button onClick={()=>{ hap.tap(); onChange(!on); }}
-      role="switch" aria-checked={on}
+      role="switch" aria-checked={on} aria-label={label}
       style={{
         width:50, height:30, borderRadius:15, flexShrink:0, position:"relative",
         cursor:"pointer", border:`1px solid ${on ? c+"66" : th.b2}`,
@@ -4296,22 +4410,30 @@ const Switch = ({ on, onChange, tone }) => {
   );
 };
 
-const Stepper = ({ value, min=1, max=99, step=1, unit, onChange, width=104 }) => {
-  const th = useTheme();
-  const bump = d => {
+// ESLATMA: bu komponent MODUL darajasida turadi. Agar Stepper ichida
+// e'lon qilinsa, har render'da yangi komponent deb hisoblanadi va tugmalar
+// qayta o'rnatiladi — animatsiya qayta boshlanadi, fokus yo'qoladi.
+const StepKey = ({ th, d, value, min, max, step, onChange, children }) => {
+  const bump = () => {
     const v = Math.max(min, Math.min(max, value + d*step));
     if (v !== value) { hap.select(); onChange(v); }
   };
-  const Key = ({ d, children }) => (
-    <button onClick={()=>bump(d)} disabled={d<0 ? value<=min : value>=max}
+  const off = d < 0 ? value <= min : value >= max;
+  return (
+    <button onClick={bump} disabled={off} aria-label={`${d < 0 ? "-" : "+"}1`}
       style={{
-        width:30, height:30, borderRadius:9, flexShrink:0, cursor:"pointer",
+        width:40, height:40, borderRadius:11, flexShrink:0, cursor: off ? "default" : "pointer",
         background:"transparent", border:"none", color:th.t2,
         display:"flex", alignItems:"center", justifyContent:"center",
-        opacity: (d<0 ? value<=min : value>=max) ? .25 : 1,
+        opacity: off ? .25 : 1,
         transition:"opacity .18s", WebkitTapHighlightColor:"transparent",
       }}>{children}</button>
   );
+};
+
+const Stepper = ({ value, min=1, max=99, step=1, unit, onChange, width=104 }) => {
+  const th = useTheme();
+  const Key = p => <StepKey th={th} {...p} value={value} min={min} max={max} step={step} onChange={onChange}/>;
   return (
     <span style={{
       display:"inline-flex", alignItems:"center", flexShrink:0, width,
@@ -4333,14 +4455,15 @@ const Stepper = ({ value, min=1, max=99, step=1, unit, onChange, width=104 }) =>
 const Segments = ({ value, options, onChange }) => {
   const th = useTheme();
   return (
-    <span style={{ display:"inline-flex", gap:3, background:th.s1, border:`1px solid ${th.b1}`,
+    <span role="radiogroup" style={{ display:"inline-flex", gap:3, background:th.s1, border:`1px solid ${th.b1}`,
       borderRadius:11, padding:3, flexShrink:0 }}>
       {options.map(o=>{
         const on = o.v===value;
         return (
-          <button key={o.v} onClick={()=>{ hap.select(); onChange(o.v); }}
+          <button key={o.v} role="radio" aria-checked={on} onClick={()=>{ hap.select(); onChange(o.v); }}
             style={{
-              padding:"5px 11px", borderRadius:8, cursor:"pointer", border:"none",
+              padding:"8px 11px", borderRadius:8, cursor:"pointer", border:"none",
+              minHeight:34,
               fontFamily:"inherit", fontSize:12, fontWeight:on?700:500,
               background: on ? th.s3 : "transparent",
               color: on ? th.t1 : th.t3,
@@ -4397,39 +4520,60 @@ const SetRow = ({ icon, title, note, right, onClick, tone, last }) => {
 };
 
 // bosib turib tasdiqlash
-const HoldBtn = ({ label, done, tone }) => {
+const HoldBtn = ({ label, done, tone, disabled }) => {
   const th = useTheme();
   const c = tone || th.err;
   const [live,sLive] = useState(false);
-  const t = useRef(null);
+  const [p1,sP1] = useState(0);
+  const timer = useRef(null);
+  const raf = useRef(0);
 
   const start = () => {
     // touch va sichqoncha hodisasi ketma-ket keladi — ikkinchisi
     // taymerni qayta bosib, "1.4 s" muddatni uzaytirib yuboradi
-    if (t.current) return;
+    if (timer.current || disabled) return;
     sLive(true); hap.press();
-    t.current = setTimeout(()=>{ t.current = null; hap.heavy(); sLive(false); done(); }, 1400);
+    const t0 = performance.now();
+    const paint = now => { sP1(Math.min(1, (now - t0) / 1400)); raf.current = requestAnimationFrame(paint); };
+    raf.current = requestAnimationFrame(paint);
+    timer.current = setTimeout(()=>{
+      timer.current = null; cancelAnimationFrame(raf.current);
+      hap.heavy(); sLive(false); sP1(0); done();
+    }, 1400);
   };
-  const stop = () => { if (!t.current) return; clearTimeout(t.current); t.current = null; sLive(false); };
+  const stop = () => {
+    cancelAnimationFrame(raf.current);
+    if (!timer.current) return;
+    clearTimeout(timer.current); timer.current = null; sLive(false); sP1(0);
+  };
 
-  useEffect(()=>()=>{ if (t.current) clearTimeout(t.current); }, []);
+  useEffect(()=>()=>{ if (timer.current) clearTimeout(timer.current); cancelAnimationFrame(raf.current); }, []);
 
   return (
     <button
+      // klaviatura: Enter yoki Space bosib turish ham 1.4 s ishlaydi
+      onKeyDown={e=>{ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); start(); } }}
+      onKeyUp={e=>{ if (e.key === "Enter" || e.key === " ") stop(); }}
+      onBlur={stop}
       onTouchStart={start} onTouchEnd={stop} onTouchCancel={stop}
       onMouseDown={start} onMouseUp={stop} onMouseLeave={stop}
       onContextMenu={e=>e.preventDefault()}
+      disabled={disabled}
+      aria-label={label}
       className={live ? "danger" : undefined}
       style={{
         position:"relative", width:"100%", padding:"13px", borderRadius:13,
-        overflow:"hidden", cursor:"pointer", fontFamily:"inherit",
-        background:`${c}14`, border:`1px solid ${c}3a`, color:c,
+        overflow:"hidden", cursor: disabled ? "default" : "pointer", fontFamily:"inherit",
+        background:`${c}${disabled ? "0a" : "14"}`, border:`1px solid ${c}${disabled ? "18" : "3a"}`,
+        color: disabled ? th.t4 : c,
         fontSize:13.5, fontWeight:700, letterSpacing:"-0.01em",
+        opacity: disabled ? .7 : 1,
         WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
       }}>
-      {live && <span className="fill" style={{ position:"absolute", inset:0,
-        background:`${c}2e`, pointerEvents:"none" }}/>}
-      <span style={{ position:"relative" }}>{live ? "Ushlab turing…" : label}</span>
+      <span className="fill" style={{ position:"absolute", inset:0, pointerEvents:"none",
+        background:`${c}2e`, transform:`scaleX(${p1})`, transformOrigin:"left center",
+        transition: live ? "none" : "transform .2s" }}/>
+      <span style={{ position:"relative" }}>{live ? t("common.hold") : label}</span>
     </button>
   );
 };
@@ -4526,7 +4670,7 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
       <SetGroup label={t("set.security")} delay={0.07}>
         <SetRow icon={<Ic.Lock s={16} c={th.ok}/>} title={t("set.pin")}
           note={t("set.pinOffNote")}
-          right={<Tag>{t("set.pinOff")}</Tag>}/>
+          right={<Tag>{t("set.pinTelegram")}</Tag>}/>
         <SetRow icon={<Ic.Sig s={16} c={th.t2}/>} title={t("set.pinReset")}
           note={t("set.pinResetNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
@@ -4540,10 +4684,11 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
         <SetRow icon={<Ic.Card s={16} c={th.t2}/>} title={t("set.maskPan")}
           note={t("set.maskPanNote")}
           right={<Switch on={cfg.maskPan} onChange={v=>set("maskPan",v)}/>}/>
-        <SetRow icon={<Ic.User s={16} c={th.t2}/>} title={t("set.devices")}
-          note={t("set.devicesNote")}
-          right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>toast({kind:"info",title:t("set.devices"),note:t("set.sessionsSoon")})} last/>
+        {/* eslatma: bu qator HECH NARSA qilmaydi — oyna ochilmaydi, hech
+            narsa yuklanmaydi. Backend hali sessiya ro'yxatini bermagani uchun
+            vaqtincha bosilmaydigan axborot qatori qilib qoldirildi. */}
+        <SetRow icon={<Ic.User s={16} c={th.t4}/>} title={t("set.devices")}
+          note={t("set.sessionsSoon")} last/>
       </SetGroup>
 
       {/* ── BILDIRISHNOMA ── */}
@@ -4565,14 +4710,14 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
 
       {/* ── ROL (demo) ── */}
       <SetGroup label={t("set.roleDemo")} delay={0.15}>
+        {/* avval uchta tugma bir xil ish qilardi ( hammasi setRole(null) ):
+            "Yangi foydalanuvchi", "Kirish oqimini sinash",
+            "Yangi a'zo sifatida kirish". Chalkash va takroriy edi.
+            Endi bitta tugma qoldi — roli pastdagi segiment almashtiradi. */}
         <SetRow icon={<Ic.User s={16} c={th.warn}/>} title={t("set.roleNew")} tone={th.warn}
           note={t("set.roleNewNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
           onClick={()=>{ setRole(null); setPin(null); toast({kind:"info",title:t("set.roleNew"),note:t("set.pinClearedNote")}); }}/>
-        <SetRow icon={<Ic.Send s={16} c={th.t2}/>} title={t("set.roleFlow")}
-          note={t("set.roleFlowNote")}
-          right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>{ setRole(null); toast({kind:"info",title:t("set.flowOpened")}); }}/>
         <SetRow icon={<Ic.Team s={16} c={th.t2}/>} title={t("set.roleView")}
           note={role==="owner" ? t("set.roleOwner") : role==="partner" ? t("set.rolePartner") : t("set.roleWorker")}
           right={<Segments value={role} onChange={v=>{ setRole(v); toast({kind:"info",title:t("set.roleChanged"),note:{owner:t("set.roleOwnerL"),partner:t("set.rolePartnerL"),worker:t("set.roleWorkerL")}[v]}); }}
@@ -4580,7 +4725,7 @@ const SettingsPage = ({ onBack, themeId, setThemeId }) => {
         <SetRow icon={<Ic.User s={16} c={th.t2}/>} title={t("set.joinFlow")}
           note={t("set.joinFlowNote")}
           right={<Ic.Right s={14} c={th.t3}/>}
-          onClick={()=>{ setRole(null); toast({kind:"info",title:t("set.flowOpened")}); }} last/>
+          onClick={()=>{ setRole(null); setPin(null); toast({kind:"info",title:t("set.joinFlow"),note:t("set.pinClearedNote")}); }} last/>
       </SetGroup>
 
       {/* ── KO'RINISH ── */}
@@ -4894,6 +5039,8 @@ const CardFlip = ({ card, children }) => {
 
   return (
     <div className="flipStage"
+      role="button" tabIndex={0} aria-label={t("card.flip.hint")} aria-pressed={!on}
+      onKeyDown={e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.stopPropagation(); flip(); } }}
       onTouchStart={down} onTouchMove={track} onTouchEnd={onTouchEnd}
       onMouseDown={down}  onMouseMove={e=>{ if(e.buttons) track(e); }} onMouseUp={onMouseUp}
       onContextMenu={e=>e.preventDefault()}
@@ -5760,6 +5907,28 @@ const PinGate = ({ saved, onSet, onOpen }) => {
 };
 
 
+// Onboarding sarlavhasi — MODUL darajasida. Ichida e'lon qilingan bo'lsa,
+// har render'da yangi komponent deb hisoblanadi va sarlavha qayta
+// chizilib, animatsiya qayta boshlanadi.
+const OnboardHead = ({ n, title, note, msg }) => {
+  const th = useTheme();
+  return (
+    <div style={{ textAlign:"center", marginBottom:22 }}>
+      <div style={{ display:"flex", justifyContent:"center", gap:7, marginBottom:18 }}>
+        {[1,2,3].map(i=>(
+          <span key={i} style={{
+            width: i===n ? 22 : 7, height:7, borderRadius:4,
+            background: i<n ? th.ok : i===n ? th.acc : th.b2,
+            transition:"all .34s cubic-bezier(.3,1.2,.3,1)",
+          }}/>
+        ))}
+      </div>
+      <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.15 }}>{title}</h1>
+      <p style={{ fontSize:13, color: msg ? th.err : th.t3, marginTop:7, lineHeight:1.5 }}>{msg || note}</p>
+    </div>
+  );
+};
+
 // ═════════════════════════════════════════
 // KIRISH JARAYONI — kanal · PIN · kod
 // ═════════════════════════════════════════
@@ -5774,6 +5943,18 @@ const Onboarding = ({ codes, onJoin }) => {
   const [msg,sMsg]   = useState("");
   const [bad,sBad]   = useState(false);
   const [seal,sSeal] = useState(false);
+
+  // PIN klaviatura bilan ham kiritilishi kerak (avfaqat faqat touch ekranda
+  // ishlardi — qattiqor telefon egalari uchun qulay emas edi)
+  useEffect(()=>{
+    if (step !== "pin") return;
+    const h = e => {
+      if (/^[0-9]$/.test(e.key)) pushPin(e.key);
+      else if (e.key === "Backspace") setTimeout(()=>sPin(p=>p.slice(0,-1)), 0);
+    };
+    window.addEventListener("keydown", h);
+    return ()=>window.removeEventListener("keydown", h);
+  });
 
   // ── 1. kanal ──
   const check = () => {
@@ -5810,22 +5991,6 @@ const Onboarding = ({ codes, onJoin }) => {
     return ["PLX", ...parts].join("-");
   };
 
-  const Head = ({ n, title, note }) => (
-    <div style={{ textAlign:"center", marginBottom:22 }}>
-      <div style={{ display:"flex", justifyContent:"center", gap:7, marginBottom:18 }}>
-        {[1,2,3].map(i=>(
-          <span key={i} style={{
-            width: i===n ? 22 : 7, height:7, borderRadius:4,
-            background: i<n ? th.ok : i===n ? th.acc : th.b2,
-            transition:"all .34s cubic-bezier(.3,1.2,.3,1)",
-          }}/>
-        ))}
-      </div>
-      <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:"-0.03em", lineHeight:1.15 }}>{title}</h1>
-      <p style={{ fontSize:13, color: msg ? th.err : th.t3, marginTop:7, lineHeight:1.5 }}>{msg || note}</p>
-    </div>
-  );
-
   return (
     <div style={{
       position:"fixed", inset:0, zIndex:9800, overflow:"hidden", background:th.bgCss,
@@ -5845,7 +6010,7 @@ const Onboarding = ({ codes, onJoin }) => {
         {/* ── KANAL ── */}
         {step==="channel" && (
           <div className="stepIn">
-            <Head n={1} title={t("ob.title1")}
+            <OnboardHead n={1} title={t("ob.title1")}
               note={t("ob.note1")}/>
 
             <div style={{ ...glass(th,0.05), borderRadius:18, padding:"18px 16px", marginBottom:14 }}>
@@ -5867,8 +6032,12 @@ const Onboarding = ({ codes, onJoin }) => {
             </div>
 
             <a href={`https://t.me/${CHANNEL.replace("@","")}`} target="_blank" rel="noreferrer"
-              style={{ textDecoration:"none", display:"block", marginBottom:9 }}>
-              <Btn v="secondary" full sz="lg">{t("ob.openChannel")}</Btn>
+              className="linkBtn" style={{
+              padding:"12px 22px", fontSize:14, borderRadius:11,
+              background:th.s2, border:`1px solid ${th.b1}`, color:th.t1,
+              fontWeight:700, textDecoration:"none", display:"flex", width:"100%", marginBottom:9,
+            }}>
+              {t("ob.openChannel")}
             </a>
             <Btn full sz="lg" onClick={check} disabled={chk!=="idle"}>
               {chk==="wait" ? <><Ic.Spin s={14} c={th.accTxt}/>{t("ob.checking")}</>
@@ -5881,7 +6050,7 @@ const Onboarding = ({ codes, onJoin }) => {
         {/* ── PIN ── */}
         {step==="pin" && (
           <div className="stepIn">
-            <Head n={2} title={rep ? t("ob.title2b") : t("ob.title2")}
+            <OnboardHead n={2} title={rep ? t("ob.title2b") : t("ob.title2")}
               note={rep ? t("ob.note2b") : t("ob.note2")}/>
             <div className={bad?"shakeX":undefined} style={{ position:"relative", height:48,
               display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
@@ -5925,7 +6094,7 @@ const Onboarding = ({ codes, onJoin }) => {
               </div>
             ) : (
               <>
-                <Head n={3} title={t("ob.title3")}
+                <OnboardHead n={3} title={t("ob.title3")}
                   note={t("ob.note3")}/>
                 <div className={bad?"shakeX":undefined} style={{ marginBottom:14 }}>
                   <input value={code} onChange={e=>sCode(fmt(e.target.value))}
@@ -6135,6 +6304,7 @@ export default function App() {
       <Css theme={theme}/>
       <OfflineBanner/>
       {!role && (
+        <div className={cfg.calm ? "calm" : undefined}>
         <Onboarding codes={codes}
           onJoin={(inv, code)=>{
             setPin(code);
@@ -6152,6 +6322,7 @@ export default function App() {
             }
             setEntered(true);
           }}/>
+        </div>
       )}
       {/* PIN qulfi olib tashlandi — foydalanuvchi so'ragan */}
       <ToastHost list={toasts} onKill={killToast}/>
