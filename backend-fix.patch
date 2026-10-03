@@ -1,0 +1,513 @@
+diff --git a/Env.example b/Env.example
+index 55efb2c..756dfda 100644
+--- a/Env.example
++++ b/Env.example
+@@ -16,8 +16,23 @@ REQUIRED_CHANNEL=@PremoLux
+ 
+ # ── xavfsizlik ──
+ JWT_SECRET=uzun-tasodifiy-satr-shu-yerga
++
++# MAJBURIY: Fernet kaliti. Kalit yaratish:
++#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
++# DIQQAT: bu kalitni o'zgartirsangiz — BARCHA shifrlangan kartalar
++# o'qilmay qoladi! Uni xavfsiz joyda saqlang va .env da o'zgartirmang.
+ PREMOLUX_ENC_KEY=
+ 
++# Egasi bo'lishi mumkin bo'lgan YAGONA Telegram ID
++OWNER_TG_ID=0
++
++# ── CORS / debug ──
++# Telegram WebApp qaysi manzildan ochiladi (vergul bilan)
++WEBAPP_ORIGINS=
++
++# /debug/last-screenshot endpointi — production da YOPIQ bo'lishi kerak
++ENABLE_DEBUG=false
++
+ # ── ish jarayoni ──
+ MAX_PARALLEL_LANES=12
+ OTP_WAIT_TIMEOUT_SEC=90
+diff --git a/app/__pycache__/__init__.cpython-310.pyc b/app/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..4929116
+Binary files /dev/null and b/app/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/__pycache__/main.cpython-310.pyc b/app/__pycache__/main.cpython-310.pyc
+new file mode 100644
+index 0000000..73a6d26
+Binary files /dev/null and b/app/__pycache__/main.cpython-310.pyc differ
+diff --git a/app/api/__pycache__/__init__.cpython-310.pyc b/app/api/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..63d5490
+Binary files /dev/null and b/app/api/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/__init__.cpython-310.pyc b/app/api/routes/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..0414da7
+Binary files /dev/null and b/app/api/routes/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/access_router.cpython-310.pyc b/app/api/routes/__pycache__/access_router.cpython-310.pyc
+new file mode 100644
+index 0000000..0209349
+Binary files /dev/null and b/app/api/routes/__pycache__/access_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/auth_router.cpython-310.pyc b/app/api/routes/__pycache__/auth_router.cpython-310.pyc
+new file mode 100644
+index 0000000..b8171d3
+Binary files /dev/null and b/app/api/routes/__pycache__/auth_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/bots_router.cpython-310.pyc b/app/api/routes/__pycache__/bots_router.cpython-310.pyc
+new file mode 100644
+index 0000000..92fd893
+Binary files /dev/null and b/app/api/routes/__pycache__/bots_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/debug_router.cpython-310.pyc b/app/api/routes/__pycache__/debug_router.cpython-310.pyc
+new file mode 100644
+index 0000000..6f98ffd
+Binary files /dev/null and b/app/api/routes/__pycache__/debug_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/orders_router.cpython-310.pyc b/app/api/routes/__pycache__/orders_router.cpython-310.pyc
+new file mode 100644
+index 0000000..e5fa45d
+Binary files /dev/null and b/app/api/routes/__pycache__/orders_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/people_router.cpython-310.pyc b/app/api/routes/__pycache__/people_router.cpython-310.pyc
+new file mode 100644
+index 0000000..697cb6c
+Binary files /dev/null and b/app/api/routes/__pycache__/people_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/relay_router.cpython-310.pyc b/app/api/routes/__pycache__/relay_router.cpython-310.pyc
+new file mode 100644
+index 0000000..1e04e6e
+Binary files /dev/null and b/app/api/routes/__pycache__/relay_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/settings_router.cpython-310.pyc b/app/api/routes/__pycache__/settings_router.cpython-310.pyc
+new file mode 100644
+index 0000000..e0f4f93
+Binary files /dev/null and b/app/api/routes/__pycache__/settings_router.cpython-310.pyc differ
+diff --git a/app/api/routes/__pycache__/ws_router.cpython-310.pyc b/app/api/routes/__pycache__/ws_router.cpython-310.pyc
+new file mode 100644
+index 0000000..750d59a
+Binary files /dev/null and b/app/api/routes/__pycache__/ws_router.cpython-310.pyc differ
+diff --git a/app/api/routes/debug_router.py b/app/api/routes/debug_router.py
+index 9dede74..061fcee 100644
+--- a/app/api/routes/debug_router.py
++++ b/app/api/routes/debug_router.py
+@@ -8,14 +8,29 @@ davrida, tezda tekshirish uchun. Production'da bu router olib
+ tashlanishi yoki himoyalanishi kerak.
+ """
+ import os
+-from fastapi import APIRouter, HTTPException
++from fastapi import APIRouter, HTTPException, Depends
+ from fastapi.responses import FileResponse
+ 
++from app.core.config import settings
++from app.core.security import get_current_user
++from app.models.tables import User, Role
++
+ router = APIRouter(prefix="/debug", tags=["debug"])
+ 
+ 
++# ── XAVFSIZLIK (2026-10 da tuzatildi) ──
++# Bu endpoint bank sahifasi suratini (ichida OTP kodi bo'lishi mumkin)
++# AUTENTIFIKATSIYASIZ qaytarardi. Endi:
++#   · faqat ENABLE_DEBUG=true bo'lganda yoqiladi
++#   · autentifikatsiya talab qilinadi
++#   · faqat EGASI rolidagi foydalanuvchiga beriladi
+ @router.get("/last-screenshot")
+-async def last_screenshot():
++async def last_screenshot(user: User = Depends(get_current_user)):
++    if not settings.enable_debug:
++        raise HTTPException(404, "Debug endpoint yopiq")
++    if user.role != Role.owner:
++        raise HTTPException(403, "Faqat egasi uchun")
++
+     path = "/tmp/last_bank_page.png"
+     if not os.path.exists(path):
+         raise HTTPException(404, "Hali hech qanday surat saqlanmagan")
+diff --git a/app/api/routes/orders_router.py b/app/api/routes/orders_router.py
+index d78da70..a9c636a 100644
+--- a/app/api/routes/orders_router.py
++++ b/app/api/routes/orders_router.py
+@@ -10,7 +10,7 @@ Eslatma: frontend api.js da yozilgan:
+ Shu formatga aynan mos.
+ """
+ from fastapi import APIRouter, Depends, HTTPException
+-from pydantic import BaseModel
++from pydantic import BaseModel, Field
+ from sqlalchemy.ext.asyncio import AsyncSession
+ 
+ from app.core.db import get_db
+@@ -29,6 +29,14 @@ class BankSelection(BaseModel):
+ class StartOrderIn(BaseModel):
+     personId: int
+     banks: list[BankSelection]
++    # Sozlamalardagi "Qayta urish" qiymati. Avval frontend yuborardi,
++    # lekin shu maydon yo'q edi — Pydantic ortiqcha maydonni jimgina
++    # tashlab ketar, ya'ni sozlama hech qachon ishlamagan.
++    # 0 = bir urinish, 1 = bir marta qayta, ... 5 = to'liq (server
++    # ichki chegarasi bilan).
++    maxRetries: int = Field(default=1, ge=0, le=5)
++    # Yangi kartaning zaxira limiti (Sozlamalar -> "Karta limiti")
++    cardCap: int = Field(default=3, ge=1, le=20)
+ 
+ 
+ @router.post("/start")
+@@ -43,6 +51,7 @@ async def start_order(
+     order = await order_service.start_order(
+         db, owner_id=user.id, person_id=payload.personId,
+         selections=[b.model_dump() for b in payload.banks],
++        max_retries=payload.maxRetries,
+     )
+     return {"orderId": order.id, "laneCount": len(payload.banks)}
+ 
+diff --git a/app/api/routes/people_router.py b/app/api/routes/people_router.py
+index e30e7e4..b582299 100644
+--- a/app/api/routes/people_router.py
++++ b/app/api/routes/people_router.py
+@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
+ 
+ from app.core.db import get_db
+ from app.core.security import get_current_user
+-from app.models.tables import User, Person, Card
++from app.models.tables import User, Person, Card, UserSettings, Role
+ from app.services.crypto import encrypt, decrypt
+ 
+ router = APIRouter(tags=["people"])
+@@ -127,6 +127,60 @@ async def add_card(
+     return _card_out(card)
+ 
+ 
++@router.get("/cards/{card_id}/secret")
++async def card_secret(
++    card_id: int,
++    db: AsyncSession = Depends(get_db),
++    user: User = Depends(get_current_user),
++):
++    """
++    To'liq karta raqami va CVV — FAQAT nusxa olish uchun.
++
++    Nima uchun kerak: ro'yxatda ("_card_out") raqam har doim
++    niqoblangan holda qaytariladi, ya'ni foydalanuvchi to'liq raqamni
++    hech qachon ko'ra olmaydi va ko'chirib bo'lmaydi. Frontenddagi
++    "Karta raqami" va "CVV" tugmalari shu endpoint orqali to'liq
++    qiymatni oladi va ALOHIDA nusxa qiladi.
++
++    XAVFSIZLIK:
++    · faqat kartaning EGASIGA (person.owner_id == user.id)
++    · "Raqamni yashirish" (mask_pan) sozlamasi yoqiq bo'lmasa,
++      ishchi/hamkor to'liq raqamni OLMAYDI — faqat egasi oladi
++    · har bir so'rov server logida qoladi
++    """
++    card = await db.get(Card, card_id)
++    if not card:
++        raise HTTPException(404, "Karta topilmadi")
++
++    person = await db.get(Person, card.person_id)
++    if not person or person.owner_id != user.id:
++        raise HTTPException(404, "Karta topilmadi")
++
++    # "Raqamni yashirish" sozlamasi
++    settings_row = (await db.execute(
++        select(UserSettings).where(UserSettings.owner_id == user.id)
++    )).scalars().first()
++    mask_pan = settings_row.mask_pan if settings_row else True
++
++    if mask_pan and user.role != Role.owner:
++        raise HTTPException(403, "To'liq karta raqamini faqat egasi ko'ra oladi")
++
++    try:
++        num = decrypt(card.number_enc)
++        cvv = decrypt(card.cvv_enc)
++    except Exception:
++        # PREMOLUX_ENC_KEY o'zgargan yoki yo'q bo'lgan bo'lishi mumkin
++        raise HTTPException(500, "Karta ma'lumotlari ochilmadi (shifrlash kaliti mos emas)")
++
++    print(f"[security] card #{card_id} to'liq ma'lumotlari "
++          f"tg_id={user.tg_id} role={user.role.value} tomonidan olindi")
++
++    return {
++        "id": card.id, "num": num, "cvv": cvv,
++        "exp": card.exp, "name": card.holder_name,
++    }
++
++
+ @router.delete("/cards/{card_id}")
+ async def delete_card(
+     card_id: int,
+diff --git a/app/api/routes/ws_router.py b/app/api/routes/ws_router.py
+index 6481928..12b7e2e 100644
+--- a/app/api/routes/ws_router.py
++++ b/app/api/routes/ws_router.py
+@@ -10,7 +10,12 @@ frontend "Lane"larni polling qilmasdan, real vaqtda yangilaydi.
+ """
+ from __future__ import annotations
+ import json
+-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
++from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
++from sqlalchemy import select
++
++from app.core.db import SessionLocal
++from app.core.security import user_from_init_data
++from app.models.tables import Order
+ 
+ router = APIRouter()
+ 
+@@ -48,7 +53,31 @@ manager = ConnectionManager()
+ 
+ 
+ @router.websocket("/ws/orders/{order_id}")
+-async def order_ws(websocket: WebSocket, order_id: int):
++async def order_ws(
++    websocket: WebSocket,
++    order_id: int,
++    token: str | None = Query(None, description="Telegram WebApp initData"),
++):
++    """
++    ── XAVFSIZLIK (2026-10 da tuzatildi) ──
++    Avval bu endpoint OCHIQ edi: token tekshirilmagan, order_id
++    ni bilgan har qanday odam boshqaning buyurtma holatini
++    kuzata olardi. Endi:
++      1) ?token=<initData> — HMAC imzosi tekshiriladi
++      2) foydalanuvchi ro'yxatdan o'tgan bo'lishi kerak
++      3) buyurtma SHU foydalanuvchining bo'lishi kerak
++    """
++    async with SessionLocal() as db:
++        user = await user_from_init_data(token, db)
++        if not user:
++            await websocket.close(code=4401, reason="autentifikatsiya kerak")
++            return
++
++        order = await db.get(Order, order_id)
++        if not order or order.owner_id != user.id:
++            await websocket.close(code=4403, reason="buyurtma topilmadi")
++            return
++
+     await manager.connect(order_id, websocket)
+     try:
+         while True:
+diff --git a/app/core/__pycache__/__init__.cpython-310.pyc b/app/core/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..d3eac3d
+Binary files /dev/null and b/app/core/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/core/__pycache__/config.cpython-310.pyc b/app/core/__pycache__/config.cpython-310.pyc
+new file mode 100644
+index 0000000..7f9a19a
+Binary files /dev/null and b/app/core/__pycache__/config.cpython-310.pyc differ
+diff --git a/app/core/__pycache__/db.cpython-310.pyc b/app/core/__pycache__/db.cpython-310.pyc
+new file mode 100644
+index 0000000..4e8d20a
+Binary files /dev/null and b/app/core/__pycache__/db.cpython-310.pyc differ
+diff --git a/app/core/__pycache__/security.cpython-310.pyc b/app/core/__pycache__/security.cpython-310.pyc
+new file mode 100644
+index 0000000..080370e
+Binary files /dev/null and b/app/core/__pycache__/security.cpython-310.pyc differ
+diff --git a/app/core/config.py b/app/core/config.py
+index b9e0a96..00f11cd 100644
+--- a/app/core/config.py
++++ b/app/core/config.py
+@@ -38,6 +38,18 @@ class Settings(BaseSettings):
+     # ── sessiyalar qayerda saqlanadi ──
+     sessions_dir: str = "./sessions"
+ 
++    # ── CORS ──
++    # Telegram WebApp qaysi manzildan ochilishi — vergullar ro'yxati.
++    # Bo'sh bo'lsa "*" (eski holat) ishlatiladi, lekin production uchun
++    # aniq manzillarni ko'rsatish SHART: har qanday sayt API'ga
++    # so'rov yubora olmasligi kerak.
++    webapp_origins: str = ""
++
++    # ── debug endpointlari ──
++    # /debug/last-screenshot — bank sahifasidagi OTP surati.
++    # "true" bo'lmasa endpoint butunlay YOPILADI (production uchun).
++    enable_debug: bool = False
++
+     # ── umumiy proxy (Telegram serverga "datacenter IP" deb shubha
+     # qilib, kod yuborishni bloklashi mumkin — shuning uchun barcha
+     # Telethon ulanishlari shu proxy orqali o'tadi, agar berilgan bo'lsa) ──
+diff --git a/app/core/security.py b/app/core/security.py
+index 2642d53..0d00d8b 100644
+--- a/app/core/security.py
++++ b/app/core/security.py
+@@ -92,6 +92,35 @@ async def get_current_user(
+     return user
+ 
+ 
++async def user_from_init_data(init_data: str | None, db: AsyncSession) -> User | None:
++    """
++    WebSocket uchun imzoni tekshirish.
++
++    Brauzer WebSocket so'roviga sarlavha (header) qo'sha olmaydi,
++    shuning uchun initData query parametrida keladi. Shu sababli
++    alohida funksiya kerak — mantiq esa _check_signature bilan
++    BIR XIL (ishonch oshirib bo'lmaydi).
++    """
++    if not init_data:
++        return None
++    try:
++        parsed = _check_signature(init_data)
++    except ValueError:
++        return None
++
++    import json
++    user_json = json.loads(parsed.get("user", "{}"))
++    tg_id = user_json.get("id")
++    if not tg_id:
++        return None
++    try:
++        tg_id = int(tg_id)
++    except (TypeError, ValueError):
++        return None
++
++    return (await db.execute(select(User).where(User.tg_id == tg_id))).scalars().first()
++
++
+ async def get_user_or_none(
+     authorization: str | None = Header(None),
+     db: AsyncSession = Depends(get_db),
+diff --git a/app/main.py b/app/main.py
+index 4591ce7..878176a 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
+ from contextlib import asynccontextmanager
+ 
+ from app.api.routes import auth_router, orders_router, relay_router, ws_router, settings_router, access_router, bots_router, people_router, debug_router
++from app.core.config import settings
+ from app.core.db import engine, Base
+ from app.models import tables  # noqa — barcha jadvallarni ro'yxatdan o'tkazadi
+ 
+@@ -26,11 +27,23 @@ async def lifespan(app: FastAPI):
+ 
+ app = FastAPI(title="PremoLux API", version="1.0.0", lifespan=lifespan)
+ 
+-# Telegram WebApp turli manzillardan ochilishi mumkin — CORS ochiq
++# ── CORS ──
++# DIQQAT: avval allow_origins=["*"] edi — bu har qanday saytga
++# API'ga so'rov yuborish imkonini berardi. Telegram WebApp odatda
++# bitta aniq manzildan ochiladi, shuning uchun .env da
++# WEBAPP_ORIGINS ni ko'rsatish kerak:
++#     WEBAPP_ORIGINS=https://yoursite.vercel.app,https://web.telegram.org
++# Bo'sh qoldirilsa — eski "*" rejimi saqlanadi (sinov uchun qulay,
++# lekin production uchun xavfsiz emas).
++_origins = [o.strip() for o in settings.webapp_origins.split(",") if o.strip()]
++if not _origins:
++    _origins = ["*"]
++    print("[CORS] DIQQAT: WEBAPP_ORIGINS belgilanmagan — "*" rejimi")
++
+ app.add_middleware(
+     CORSMiddleware,
+-    allow_origins=["*"],
+-    allow_methods=["*"],
++    allow_origins=_origins,
++    allow_methods=["GET","POST","PUT","DELETE","OPTIONS"],
+     allow_headers=["*"],
+ )
+ 
+diff --git a/app/models/__pycache__/__init__.cpython-310.pyc b/app/models/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..64c9ff6
+Binary files /dev/null and b/app/models/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/models/__pycache__/tables.cpython-310.pyc b/app/models/__pycache__/tables.cpython-310.pyc
+new file mode 100644
+index 0000000..a1a52d4
+Binary files /dev/null and b/app/models/__pycache__/tables.cpython-310.pyc differ
+diff --git a/app/schemas/__pycache__/__init__.cpython-310.pyc b/app/schemas/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..3ef6137
+Binary files /dev/null and b/app/schemas/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/__init__.cpython-310.pyc b/app/services/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..ec18869
+Binary files /dev/null and b/app/services/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/access_service.cpython-310.pyc b/app/services/__pycache__/access_service.cpython-310.pyc
+new file mode 100644
+index 0000000..e494fce
+Binary files /dev/null and b/app/services/__pycache__/access_service.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/bank_page.cpython-310.pyc b/app/services/__pycache__/bank_page.cpython-310.pyc
+new file mode 100644
+index 0000000..a6d839d
+Binary files /dev/null and b/app/services/__pycache__/bank_page.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/crypto.cpython-310.pyc b/app/services/__pycache__/crypto.cpython-310.pyc
+new file mode 100644
+index 0000000..fb4fe69
+Binary files /dev/null and b/app/services/__pycache__/crypto.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/order_service.cpython-310.pyc b/app/services/__pycache__/order_service.cpython-310.pyc
+new file mode 100644
+index 0000000..806167b
+Binary files /dev/null and b/app/services/__pycache__/order_service.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/sms_filter.cpython-310.pyc b/app/services/__pycache__/sms_filter.cpython-310.pyc
+new file mode 100644
+index 0000000..b87c03e
+Binary files /dev/null and b/app/services/__pycache__/sms_filter.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/stats_service.cpython-310.pyc b/app/services/__pycache__/stats_service.cpython-310.pyc
+new file mode 100644
+index 0000000..3b629ab
+Binary files /dev/null and b/app/services/__pycache__/stats_service.cpython-310.pyc differ
+diff --git a/app/services/__pycache__/telethon_pool.cpython-310.pyc b/app/services/__pycache__/telethon_pool.cpython-310.pyc
+new file mode 100644
+index 0000000..636a374
+Binary files /dev/null and b/app/services/__pycache__/telethon_pool.cpython-310.pyc differ
+diff --git a/app/services/order_service.py b/app/services/order_service.py
+index b9c4695..e1736c2 100644
+--- a/app/services/order_service.py
++++ b/app/services/order_service.py
+@@ -25,7 +25,8 @@ def get_pool() -> TelethonPool:
+ 
+ 
+ async def start_order(db: AsyncSession, owner_id: int, person_id: int,
+-                       selections: list[dict]) -> Order:
++                       selections: list[dict],
++                       max_retries: int = 1) -> Order:
+     """
+     selections — frontenddan keladigan ro'yxat:
+       [{ "cardId": 12, "bankId": "uzum" }, { "cardId": 15, "bankId": "kapital" }, ...]
+@@ -75,12 +76,13 @@ async def start_order(db: AsyncSession, owner_id: int, person_id: int,
+         await db.refresh(lane)
+ 
+     # ── LANE'LAR PARALEL, LEKIN "streams" CHEGARASIDAN OSHMAYDI ──
+-    asyncio.create_task(_run_all_lanes([l.id for l in lanes], max_streams))
++    asyncio.create_task(_run_all_lanes([l.id for l in lanes], max_streams, max_retries))
+ 
+     return order
+ 
+ 
+-async def _run_all_lanes(lane_ids: list[int], max_streams: int) -> None:
++async def _run_all_lanes(lane_ids: list[int], max_streams: int,
++                         max_retries: int = 1) -> None:
+     """
+     asyncio.Semaphore orqali bir vaqtda ishlaydigan Lane sonini
+     Sozlamalardagi "Bir vaqtda oqim" qiymati bilan cheklaydi.
+@@ -91,7 +93,7 @@ async def _run_all_lanes(lane_ids: list[int], max_streams: int) -> None:
+ 
+     async def _guarded(lid: int):
+         async with sem:
+-            await run_lane(lid, _pool)
++            await run_lane(lid, _pool, max_retries=max_retries)
+ 
+     await asyncio.gather(*[_guarded(lid) for lid in lane_ids], return_exceptions=True)
+ 
+diff --git a/app/workers/__pycache__/__init__.cpython-310.pyc b/app/workers/__pycache__/__init__.cpython-310.pyc
+new file mode 100644
+index 0000000..73b0bb1
+Binary files /dev/null and b/app/workers/__pycache__/__init__.cpython-310.pyc differ
+diff --git a/app/workers/__pycache__/lane_worker.cpython-310.pyc b/app/workers/__pycache__/lane_worker.cpython-310.pyc
+new file mode 100644
+index 0000000..fd65808
+Binary files /dev/null and b/app/workers/__pycache__/lane_worker.cpython-310.pyc differ
+diff --git a/app/workers/lane_worker.py b/app/workers/lane_worker.py
+index 1fddb93..714c41f 100644
+--- a/app/workers/lane_worker.py
++++ b/app/workers/lane_worker.py
+@@ -98,7 +98,7 @@ class LaneError(Exception):
+         super().__init__(reason)
+ 
+ 
+-async def run_lane(lane_id: int, pool: TelethonPool) -> None:
++async def run_lane(lane_id: int, pool: TelethonPool, max_retries: int = 1) -> None:
+     """
+     Bitta Lane uchun to'liq oqimni bajaradi. Xato chiqsa ushlab,
+     Lane holatini 'failed' qilib, funksiyadan tinch chiqadi —
+@@ -110,7 +110,12 @@ async def run_lane(lane_id: int, pool: TelethonPool) -> None:
+     turlariga (masalan bot ulanmagan) taalluqli EMAS, ular
+     darrov Lane'ni to'xtatadi.
+     """
+-    MAX_LOGIN_ATTEMPTS = 5
++    # ── Qayta urish soni ──
++    # Sozlamalardagi "Qayta urish" qiymati: 0 = bir urinish,
++    # 1 = bir marta qayta, 5 = to'liq. Avval bu qiymat DOIM 5 edi —
++    # ya'ni Sozlamalar sahifasidagi tugma umuman ishlamagan.
++    MAX_ATTEMPTS_CAP = 5
++    MAX_LOGIN_ATTEMPTS = max(1, min(MAX_ATTEMPTS_CAP, int(max_retries) + 1))
+ 
+     async with SessionLocal() as db:
+         lane = await db.get(Lane, lane_id)
