@@ -76,6 +76,9 @@ const themes = {
   },
 };
 
+// rasmiy kanal — Onboarding va yordam sahifalarida ishlatiladi
+const CHANNEL = "@PremoLux";
+
 const ThemeCtx = createContext(themes.amoled);
 const useTheme = () => useContext(ThemeCtx);
 
@@ -427,11 +430,12 @@ const Css = ({ theme }) => {
     .numIn { animation:_numIn .3s cubic-bezier(.2,.9,.3,1) both }
 
     /* ═══ MODAL TUGMADAN O'SISHI ═══ */
-    @keyframes _grow {
+    /* — modal tugmadan o'sishi (_grow .bar uchun band qilingan) — */
+    @keyframes _growFrom {
       from { opacity:0; transform:translate(var(--gx), var(--gy)) scale(var(--gs)); }
       to   { opacity:1; transform:translate(0,0) scale(1); }
     }
-    .grow { animation:_grow .42s cubic-bezier(.22,1.02,.3,1) both; transform-origin:center center; }
+    .grow { animation:_growFrom .42s cubic-bezier(.22,1.02,.3,1) both; transform-origin:center center; }
 
     /* ═══ SOZLAMALAR ═══ */
     @keyframes _rowIn { from{opacity:0;transform:translateY(9px)} to{opacity:1;transform:none} }
@@ -469,14 +473,16 @@ const Css = ({ theme }) => {
     .brandIn { animation:_brandIn .5s cubic-bezier(.2,.9,.3,1) both }
 
     /* ═══ TAKLIF KODI ═══ */
-    @keyframes _codeIn  { from{opacity:0;transform:translateY(-10px) scale(.96)} to{opacity:1;transform:none} }
-    @keyframes _charIn  { from{opacity:0;transform:translateY(-6px) scale(.7)} to{opacity:1;transform:none} }
-    @keyframes _scanLine{ 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
-    @keyframes _usedX   { from{opacity:0;transform:scaleX(0)} to{opacity:1;transform:scaleX(1)} }
-    .codeIn  { animation:_codeIn .42s cubic-bezier(.2,1.05,.3,1) both }
-    .charIn  { animation:_charIn .3s cubic-bezier(.2,1.3,.4,1) both }
+    @keyframes _codeIn  { from{opacity:0;transform:translateY(10px) scale(.96)} to{opacity:1;transform:none} }
+    @keyframes _charIn  { from{opacity:0;transform:translateY(-9px) scale(.7)} to{opacity:1;transform:none} }
+    @keyframes _scanLine{ from{transform:translateY(-120%)} to{transform:translateY(320%)} }
+    @keyframes _stepIn  { from{opacity:0;transform:translateX(26px)} to{opacity:1;transform:none} }
+    @keyframes _tick2   { from{transform:scale(.4);opacity:0} 60%{transform:scale(1.14)} to{transform:scale(1);opacity:1} }
+    .codeIn  { animation:_codeIn .4s cubic-bezier(.2,1.05,.3,1) both }
+    .charIn  { animation:_charIn .24s cubic-bezier(.2,1.4,.4,1) both }
     .scanLine{ animation:_scanLine 2.2s cubic-bezier(.4,0,.6,1) infinite }
-    .usedX   { transform-origin:left center; animation:_usedX .34s cubic-bezier(.3,.9,.3,1) both }
+    .stepIn  { animation:_stepIn .36s cubic-bezier(.2,.9,.3,1) both }
+    .tick2   { animation:_tick2 .38s cubic-bezier(.2,1.35,.4,1) both }
 
     /* ═══ STATISTIKA GRAFIGI ═══ */
     @keyframes _draw2  { from{stroke-dashoffset:1} to{stroke-dashoffset:0} }
@@ -521,39 +527,6 @@ const Css = ({ theme }) => {
     .bannerOut { animation:_bannerOut .26s cubic-bezier(.4,0,.7,.4) both }
     .dotBlink  { animation:_dotBlink 1.1s ease-in-out infinite }
     .skelShine { animation:_skelShine 1.3s cubic-bezier(.4,0,.3,1) infinite }
-
-    /* ═══ TAKLIF KODI ═══ */
-    @keyframes _codeIn  { from{opacity:0;transform:translateY(-6px) scale(.9)} to{opacity:1;transform:none} }
-    @keyframes _scanLine{ 0%{transform:translateY(-100%)} 100%{transform:translateY(320%)} }
-    @keyframes _joinIn  { from{opacity:0;transform:translateY(14px) scale(.96)} to{opacity:1;transform:none} }
-    @keyframes _tick2   { from{stroke-dashoffset:26} to{stroke-dashoffset:0} }
-    @keyframes _bubble  { 0%{transform:translateY(0) scale(1);opacity:.5} 100%{transform:translateY(-34px) scale(.3);opacity:0} }
-    .codeIn  { animation:_codeIn .28s cubic-bezier(.2,1.3,.4,1) both }
-    .scanLine{ animation:_scanLine 2.2s cubic-bezier(.4,0,.6,1) infinite }
-    .joinIn  { animation:_joinIn .42s cubic-bezier(.2,.95,.3,1) both }
-    .tick2   { stroke-dasharray:26; animation:_tick2 .34s cubic-bezier(.4,0,.2,1) both }
-    .bubble  { animation:_bubble 1.6s ease-out infinite }
-
-    /* ═══ TAKLIF KODI ═══ */
-    @keyframes _codeIn  { from{opacity:0;transform:translateY(10px) scale(.96)} to{opacity:1;transform:none} }
-    @keyframes _scanLine{ 0%{transform:translateY(-120%)} 100%{transform:translateY(320%)} }
-    @keyframes _charIn  { from{opacity:0;transform:translateY(-9px) scale(.7)} to{opacity:1;transform:none} }
-    @keyframes _joinPop { 0%{transform:scale(.3);opacity:0} 55%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
-    .codeIn   { animation:_codeIn .4s cubic-bezier(.2,1.05,.3,1) both }
-    .scanLine { animation:_scanLine 2.2s cubic-bezier(.4,0,.6,1) infinite }
-    .charIn   { animation:_charIn .24s cubic-bezier(.2,1.4,.4,1) both }
-    .joinPop  { animation:_joinPop .42s cubic-bezier(.2,1.3,.4,1) both }
-
-    /* ═══ TAKLIF KODI ═══ */
-    @keyframes _chIn   { from{opacity:0;transform:translateY(-9px) scale(.8)} to{opacity:1;transform:none} }
-    @keyframes _codeGl { 0%,100%{box-shadow:0 0 0 0 transparent} 50%{box-shadow:0 0 22px -4px currentColor} }
-    @keyframes _stepIn { from{opacity:0;transform:translateX(26px)} to{opacity:1;transform:none} }
-    @keyframes _stepOut{ from{opacity:1;transform:none} to{opacity:0;transform:translateX(-26px)} }
-    @keyframes _tick2  { from{transform:scale(.4);opacity:0} 60%{transform:scale(1.14)} to{transform:scale(1);opacity:1} }
-    .chIn   { animation:_chIn .3s cubic-bezier(.2,1.3,.4,1) both }
-    .codeGl { animation:_codeGl 2.4s ease-in-out infinite }
-    .stepIn { animation:_stepIn .36s cubic-bezier(.2,.9,.3,1) both }
-    .tick2  { animation:_tick2 .38s cubic-bezier(.2,1.35,.4,1) both }
 
     /* ═══ PREMIUM BAYRAMI ═══ */
     @keyframes _conf {
@@ -2033,9 +2006,6 @@ const LANE_STEPS = [
   { key:"done",  label:"Premium", note:"Faollashtirildi" },
 ];
 
-const rnd = (a,b) => a + Math.random()*(b-a);
-const fakeNum = () => "+9989" + Math.floor(10000000 + Math.random()*89999999);
-
 const Lane = ({ lane }) => {
   const th = useTheme();
   const b  = gB(lane.bankId);
@@ -2111,7 +2081,7 @@ const Lane = ({ lane }) => {
 const PremiumPage = ({ goto }) => {
   const th = useTheme();
   const toast = useToast();
-  const { account, bots, people, setPeople, role, bump } = useData();
+  const { account, bots=[], people, setPeople, role, bump } = useData();
 
   const wired = bots.filter(b=>b.connected);
   const isWorker = role === "worker";
@@ -2127,10 +2097,15 @@ const PremiumPage = ({ goto }) => {
 
   const who = people.find(p=>p.id===pid);
   const nameOf = c => BL.find(b=>b.id===c.bankId)?.name || c.bankId;
-  const groups = p => [...new Set(p?.cards.map(nameOf)||[])].map(name=>({
-    name, id: BL.find(b=>b.name===name)?.id || name,
-    cards: p.cards.filter(c=>nameOf(c)===name && cardHealth(c).left>0 && cardHealth(c).state!=="expired"),
-  })).filter(g=>g.cards.length>0);
+  // backend'dan kelgan shaxsda `cards` yo'q bo'lishi mumkin —
+  // shuning uchun har doim zaxira massiv bilan ishlaymiz
+  const groups = p => {
+    const cards = p?.cards || [];
+    return [...new Set(cards.map(nameOf))].map(name=>({
+      name, id: BL.find(b=>b.name===name)?.id || name,
+      cards: cards.filter(c=>nameOf(c)===name && cardHealth(c).left>0 && cardHealth(c).state!=="expired"),
+    })).filter(g=>g.cards.length>0);
+  };
 
   const avail = who ? groups(who) : [];
   const max   = avail.length;
@@ -2163,12 +2138,20 @@ const PremiumPage = ({ goto }) => {
     login_failed: 4, waiting_stuck: 4,
   };
 
+  const pollStop = useRef(null);
+
   const startPolling = (orderId, L, pid2) => {
+    // avvalgi tsiklni to'xtatamiz — aks holda har sahifaga kirgan
+    // o'ta bitta so'rovlar ketma-ket yug'ib, eski holat ustiga yozadi
+    pollStop.current?.();
     let cancelled = false;
+    let timer = null;
     const poll = async () => {
       if (cancelled) return;
       try {
         const data = await api.get(`/orders/${orderId}`);
+
+        if (cancelled) return;
 
         sLanes(prev => prev.map((l, idx) => {
           const remote = data?.lanes?.[idx];
@@ -2193,21 +2176,27 @@ const PremiumPage = ({ goto }) => {
               const cid = L[idx]?.cardId;
               if (cid) {
                 setPeople(list => list.map(pr => pr.id===pid2 ? {
-                  ...pr, cards: pr.cards.map(cd => cd.id===cid ? { ...cd, used:(cd.used||0)+1 } : cd)
+                  ...pr, cards: (pr.cards||[]).map(cd => cd.id===cid ? { ...cd, used:(cd.used||0)+1 } : cd)
                 } : pr));
               }
             }
           });
           // MUHIM: buyurtma tugadi — saqlangan "faol buyurtma"ni tozalaymiz
           try { localStorage.removeItem("premolux_active_order"); } catch {}
+          clearTimeout(timer);
           return;
         }
       } catch {}
-      if (!cancelled) setTimeout(poll, 1500);
+      if (!cancelled) timer = setTimeout(poll, 1500);
     };
     poll();
-    return () => { cancelled = true; };
+    const stop = () => { cancelled = true; clearTimeout(timer); };
+    pollStop.current = stop;
+    return stop;
   };
+
+  // sahifa yopilganda tsikl to'xtaydi
+  useEffect(() => () => { pollStop.current?.(); pollStop.current = null; }, []);
 
   // MUHIM: sahifadan chiqib qaytilganda (yoki yangilanganda) FAOL
   // buyurtma bo'lsa — TIKLAYMIZ, "shaxs tanlash"ga qaytarib
@@ -2244,7 +2233,7 @@ const PremiumPage = ({ goto }) => {
     const L = chosen.map((g,i)=>{
       const cd = g.cards.find(c=>c.id===picks[g.id]) || g.cards[0];
       return { key:i, bankId:g.id, cardId:cd.id,
-        card: cd.num.replace(/\s/g,"").slice(-4),
+        card: last4(cd.num),
         step:0, num:"", code:"", failed:false };
     });
     sLanes(L);
@@ -2489,7 +2478,7 @@ const PremiumPage = ({ goto }) => {
                   </div>
                   {g.cards.length===1 && (
                     <span style={{ fontFamily:"'SF Mono',monospace", fontSize:12, color:th.acc }}>
-                      •••• {g.cards[0].num.replace(/\s/g,"").slice(-4)}
+                      •••• {last4(g.cards[0].num)}
                     </span>
                   )}
                 </div>
@@ -2498,7 +2487,7 @@ const PremiumPage = ({ goto }) => {
                   <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
                     {g.cards.map(c=>{
                       const on = picks[g.id]===c.id;
-                      const t4 = c.num.replace(/\s/g,"").slice(-4);
+                      const t4 = last4(c.num);
                       return (
                         <button key={c.id} onClick={()=>sPicks(x=>({...x,[g.id]:c.id}))} style={{
                           display:"inline-flex", alignItems:"center", gap:6,
@@ -2562,7 +2551,6 @@ const PremiumPage = ({ goto }) => {
 // ═════════════════════════════════════════
 // TAKLIF KODLARI
 // ═════════════════════════════════════════
-const CH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 // ── Kirish sehrgari: kanal → PIN → kod ──
 // ═════════════════════════════════════════
 // TAKLIF KODLARI
@@ -2779,6 +2767,7 @@ const cntOf = (p, workers) =>
   (p.today || 0) + workers.filter(w=>w.parent===p.id).reduce((a,w)=>a + (w.today||0), 0);
 const dueOf = (p, workers) => cntOf(p, workers) * (p.price || 0);
 const som = n => (n||0).toLocaleString("ru-RU");
+const last4 = num => (num || "").replace(/\s/g,"").slice(-4);
 
 const PAY_FROM = 22, PAY_TO = 23;
 const inPayWindow = () => { const h = new Date().getHours(); return h >= PAY_FROM && h < PAY_TO; };
@@ -3030,7 +3019,7 @@ const TeamPage = () => {
   const th    = useTheme();
   const toast = useToast();
   const { toss } = useToss(th);
-  const { role, partners, setPartners, workers, setWorkers, codes, setCodes } = useData();
+  const { role, partners=[], setPartners, workers=[], setWorkers, codes=[], setCodes } = useData();
   const isOwner = role === "owner";
   const me = "me";
 
@@ -3054,8 +3043,6 @@ const TeamPage = () => {
   const drop = code => { setCodes(l=>l.filter(c=>c.code!==code)); hap.warn(); toast({kind:"warn",title:"Kod o'chirildi"}); };
 
   const parentName = id => id==="owner" ? "Siz" : id==="me" ? "Siz" : (partners.find(p=>p.id===id)?.name || "—");
-
-  const cntAll = partners.reduce((a,p)=>a + cntOf(p, workers), 0);
 
   const setPrice = (pid, price) => {
     setPartners(l=>l.map(x=>x.id===pid?{...x, price}:x));
@@ -3637,7 +3624,7 @@ const ShareBar = ({ name, value, total, tone, i }) => {
 
 const StatsPage = () => {
   const th = useTheme();
-  const { hist, partners, workers, role } = useData();
+  const { hist, partners=[], workers=[] } = useData();
   const [per,sPer] = useState("day");   // day | week | month
 
   const today = hist.find(x=>x.d===dayKey()) || { d:dayKey(), n:0, h:Array(24).fill(0) };
@@ -4002,7 +3989,7 @@ const LoginFlow = ({ account, onChange }) => {
             <Lbl>Tasdiqlash kodi</Lbl>
             <CodeBoxes value={code} onChange={sCd} onDone={verify} autoFocus/>
             <div style={{ display:"flex",alignItems:"center",gap:9,marginTop:11 }}>
-              <p style={{ flex:1,fontSize:11,color:th.t4 }}>Demo: istalgan 5 raqam</p>
+              <p style={{ flex:1,fontSize:11,color:th.t4 }}>Telegram'dan kelgan 5 xonali kod</p>
               <Btn onClick={verify} disabled={load||code.length<5} style={{ whiteSpace:"nowrap",minWidth:118 }}>{load?<><Ic.Spin s={12}/>...</>:<><Ic.Check/>Tasdiqlash</>}</Btn>
             </div>
           </div>
@@ -4037,6 +4024,7 @@ const BotRow = ({ bot, idx, onChange }) => {
   const u=bot.connected?bot.active/bot.maxLogins:0;
   const [busy,sBusy]=useState(false);
   const conn=async ()=>{
+    if(busy) return;
     if(!inp.startsWith("@")){hap.err();sE("@ bilan boshlang");return;}
     sBusy(true); sE("");
     try {
@@ -4050,7 +4038,7 @@ const BotRow = ({ bot, idx, onChange }) => {
   };
   const disc=async ()=>{
     try { await api.post(`/bots/${idx+1}/disconnect`, {}); } catch {}
-    onChange({id:bot.id,username:"",connected:false,active:0,maxLogins:15,online:false});
+    onChange({ ...bot, username:"", connected:false, active:0, online:false });
   };
   return(
     <div style={{ ...glass(th,0.04),borderRadius:13,overflow:"hidden",border:`1px solid ${bot.connected&&bot.online?"rgba(52,199,89,0.15)":th.b1}` }}>
@@ -4075,7 +4063,7 @@ const BotRow = ({ bot, idx, onChange }) => {
         </>}
       </div>
       {open&&!bot.connected&&<div style={{ padding:"11px 14px",borderTop:`1px solid ${th.b1}`,background:th.id==="light"?"rgba(16,19,26,0.03)":"rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",gap:7 }}>
-        <div style={{ display:"flex",gap:9 }}><input value={inp} onChange={e=>sI(e.target.value)} placeholder="@BotUsername" autoFocus onKeyDown={e=>e.key==="Enter"&&conn()}/><Btn onClick={conn} style={{ whiteSpace:"nowrap" }}>Ulash</Btn></div>
+        <div style={{ display:"flex",gap:9 }}><input value={inp} onChange={e=>sI(e.target.value)} placeholder="@BotUsername" autoFocus onKeyDown={e=>e.key==="Enter"&&!busy&&conn()}/><Btn onClick={conn} disabled={busy} style={{ whiteSpace:"nowrap" }}>{busy?"Ulanmoqda...":"Ulash"}</Btn></div>
         <Err msg={err}/>
       </div>}
       {bot.connected&&<div style={{ padding:"8px 14px",borderTop:`1px solid ${th.b1}`,background:th.id==="light"?"rgba(16,19,26,0.025)":"rgba(0,0,0,0.15)",display:"flex",alignItems:"center",gap:8 }}>
@@ -4089,7 +4077,7 @@ const BotRow = ({ bot, idx, onChange }) => {
 const BotsPage = () => {
   const th = useTheme();
   const toast = useToast();
-  const { account:acc, setAccount:sAcc, bots, setBots:sBots } = useData();
+  const { account:acc, setAccount:sAcc, bots=[], setBots:sBots } = useData();
   const [saved,sSav]=useState(false);
   const conn=bots.filter(b=>b.connected); const ready=acc&&conn.length>0;
   const upB=(i,v)=>sBots(p=>{const n=[...p];n[i]=v;return n;});
@@ -4172,7 +4160,6 @@ const Ava=({bid,n=36})=>{
   const b  = gB(bid);
   const [u,sU]   = useState(bC[bid] || null);
   const [go,sGo] = useState(!!bC[bid]);   // yuklandi
-  const [tries,sTries] = useState(0);     // 0=domen 1=itunes 2=tugadi
 
   useEffect(()=>{
     if (bC[bid]) { sU(bC[bid]); sGo(true); return; }
@@ -4419,15 +4406,21 @@ const HoldBtn = ({ label, done, tone }) => {
   const t = useRef(null);
 
   const start = () => {
+    // touch va sichqoncha hodisasi ketma-ket keladi — ikkinchisi
+    // taymerni qayta bosib, "1.4 s" muddatni uzaytirib yuboradi
+    if (t.current) return;
     sLive(true); hap.press();
-    t.current = setTimeout(()=>{ hap.heavy(); sLive(false); done(); }, 1400);
+    t.current = setTimeout(()=>{ t.current = null; hap.heavy(); sLive(false); done(); }, 1400);
   };
-  const stop = () => { clearTimeout(t.current); sLive(false); };
+  const stop = () => { if (!t.current) return; clearTimeout(t.current); t.current = null; sLive(false); };
+
+  useEffect(()=>()=>{ if (t.current) clearTimeout(t.current); }, []);
 
   return (
     <button
       onTouchStart={start} onTouchEnd={stop} onTouchCancel={stop}
       onMouseDown={start} onMouseUp={stop} onMouseLeave={stop}
+      onContextMenu={e=>e.preventDefault()}
       className={live ? "danger" : undefined}
       style={{
         position:"relative", width:"100%", padding:"13px", borderRadius:13,
@@ -4450,18 +4443,30 @@ const HoldBtn = ({ label, done, tone }) => {
 const SettingsPage = ({ onBack, themeId, setThemeId }) => {
   const th    = useTheme();
   const toast = useToast();
-  const { cfg, setCfg, people, bots, setPeople, setBots, setAccount, role, setRole, setPin } = useData();
+  const { cfg, setCfg, people=[], bots=[], setPeople, setBots, setAccount, role, setRole, setPin,
+          setCodes, setPartners, setWorkers, setHist } = useData();
 
   const [ask,sAsk] = useState(null);
   const set = (k,v) => setCfg(c=>({ ...c, [k]:v }));
 
-  const cards = people.reduce((a,p)=>a+p.cards.length,0);
+  const cards = people.reduce((a,p)=>a+(p.cards||[]).length,0);
   const wired = bots.filter(b=>b.connected).length;
+
+  const resetBots = b => b.map(x=>({ id:x.id, username:"", connected:false, active:0,
+                                    maxLogins:x.maxLogins||15, online:false }));
 
   const wipe = (what) => {
     if (what==="cards") { setPeople([]); toast({kind:"ok",title:"Kartalar tozalandi"}); }
-    if (what==="bots")  { setBots(b=>b.map(x=>({id:x.id,username:"",connected:false,active:0,maxLogins:15,online:false}))); setAccount(""); toast({kind:"ok",title:"Botlar tozalandi"}); }
-    if (what==="all")   { setPeople([]); setBots(b=>b.map(x=>({id:x.id,username:"",connected:false,active:0,maxLogins:15,online:false}))); setAccount(""); toast({kind:"err",title:"Hamma narsa tozalandi"}); }
+    if (what==="bots")  { setBots(resetBots); setAccount(""); toast({kind:"ok",title:"Botlar tozalandi"}); }
+    if (what==="all") {
+      // "Hammasini o'chirish" — taklif kodlari, jamoa va tarix ham kiradi,
+      // aks holda ular localStorage'da qolib ketardi
+      setPeople([]); setBots(resetBots); setAccount("");
+      setCodes([]); setPartners([]); setWorkers([]); setHist([]);
+      setPin(null); setRole("owner");
+      try { localStorage.removeItem("premolux_active_order"); } catch {}
+      toast({kind:"err",title:"Hamma narsa tozalandi"});
+    }
     sAsk(null);
   };
 
@@ -5006,8 +5011,8 @@ const CardsPage=()=>{
   const [undo,sUndo]=useState(null);
   const c=stk[stk.length-1];const push=s=>sSt([...stk,s]);const pop=()=>sSt(stk.slice(0,-1));
   const gBN=card=>{const b=BL.find(x=>x.id===card.bankId);return b?b.name:card.bankId;};
-  const gBs=p=>{const ns=[...new Set(p?.cards.map(gBN)||[])];return ns.map(n=>({n,bid:BL.find(b=>b.name===n)?.id||n,cards:p.cards.filter(x=>gBN(x)===n)}));};
-  const bc=P.find(p=>p.id===c.pid)?.cards.filter(x=>gBN(x)===c.bn)||[];
+  const gBs=p=>{const cs=p?.cards||[];const ns=[...new Set(cs.map(gBN))];return ns.map(n=>({n,bid:BL.find(b=>b.name===n)?.id||n,cards:cs.filter(x=>gBN(x)===n)}));};
+  const bc=(P.find(p=>p.id===c.pid)?.cards||[]).filter(x=>gBN(x)===c.bn);
   const pers=P.find(p=>p.id===c.pid);
   const addP=async()=>{
     if(!nn.trim()){sNE("Ism kiriting");return;}
@@ -5028,7 +5033,7 @@ const CardsPage=()=>{
     // NIQOBLANGAN raqamni qaytaradi, shuni saqlaymiz.
     try {
       const saved = await api.post(`/people/${c.pid}/cards`, card);
-      sP(p=>p.map(x=>x.id===c.pid?{...x,cards:[...x.cards,saved]}:x));
+      sP(p=>p.map(x=>x.id===c.pid?{...x,cards:[...(x.cards||[]),saved]}:x));
       sFresh(saved.id); setTimeout(()=>sFresh(null),1500); hap.ok();
       toast({kind:'ok',title:'Karta qo\'shildi',note:`•••• ${card.num.replace(/\s/g,'').slice(-4)}`});
     } catch (e) {
@@ -5036,13 +5041,14 @@ const CardsPage=()=>{
       toast({kind:'err',title:"Serverga saqlanmadi",note:e.message});
     }
   };
-  const delC=id=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:x.cards.filter(k=>k.id!==id)}:x));api.del(`/cards/${id}`).catch(()=>{});};
-  const delP=id=>{sP(p=>p.filter(x=>x.id!==id));sSt([{v:"p"}]);api.del(`/people/${id}`).catch(()=>{});};
+  const delC=id=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:(x.cards||[]).filter(k=>k.id!==id)}:x));api.del(`/cards/${id}`).catch(()=>{});};
   const delPerson=id=>{sP(p=>p.filter(x=>x.id!==id));api.del(`/people/${id}`).catch(()=>{});};
-  const delB=n=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:x.cards.filter(k=>gBN(k)!==n)}:x));pop();};
-  const tot=P.reduce((s,p)=>s+p.cards.length,0);const act=P.reduce((s,p)=>s+p.cards.filter(k=>cardHealth(k).left>0 && cardHealth(k).state!=="expired").length,0);
-  const lim=P.reduce((s,p)=>s+p.cards.filter(k=>{const h=cardHealth(k);return h.left<=0||h.state==="expired";}).length,0);
-  const { toss, tossAll } = useToss(th);
+  const delB=n=>{sP(p=>p.map(x=>x.id===c.pid?{...x,cards:(x.cards||[]).filter(k=>gBN(k)!==n)}:x));pop();};
+  const allCards=P.flatMap(p=>p.cards||[]);
+  const tot=allCards.length;
+  const act=allCards.filter(k=>cardHealth(k).left>0 && cardHealth(k).state!=="expired").length;
+  const lim=allCards.filter(k=>{const h=cardHealth(k);return h.left<=0||h.state==="expired";}).length;
+  const { toss } = useToss(th);
   return(
     <div style={{ display:"flex",flexDirection:"column",gap:18,maxWidth:680 }}>
       {undo&&<UndoBar item={undo} onUndo={()=>{undo.restore();sUndo(null);}} onClose={()=>sUndo(null)}/>}
@@ -5074,7 +5080,7 @@ const CardsPage=()=>{
               <div style={{ width:36,height:36,borderRadius:9,background:th.s1,border:`1px solid ${th.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Ic.User s={15} c={th.t3}/></div>
               <div style={{ flex:1,minWidth:0 }}>
                 <p style={{ fontWeight:600,fontSize:13,letterSpacing:"-0.01em" }}>{p.name}</p>
-                <p style={{ fontSize:11,color:th.t3,marginTop:2 }}>{p.cards.length} karta · {bks.length} bank</p>
+                <p style={{ fontSize:11,color:th.t3,marginTop:2 }}>{(p.cards||[]).length} karta · {bks.length} bank</p>
               </div>
               <div style={{ display:"flex",marginRight:3 }}>{bks.slice(0,3).map((bk,i)=><div key={bk.bid} style={{ marginLeft:i?-5:0,zIndex:3-i }}><Ava bid={bk.bid} n={22}/></div>)}{bks.length>3&&<div style={{ width:22,height:22,borderRadius:6,marginLeft:-5,...glass(th,0.05),display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:th.t3,fontWeight:600 }}>+{bks.length-3}</div>}</div>
               <Ic.Right s={13} c={th.t3}/>
@@ -5091,7 +5097,7 @@ const CardsPage=()=>{
       </>}
       {c.v==="b"&&pers&&<div style={{ display:"flex",flexDirection:"column",gap:7 }}>
         {gBs(pers).map(bk=>{const bd=gB(bk.bid);return(
-          <div key={bk.bid} data-item><SwipeRow label="Bank" onDelete={()=>{const el=document.querySelector(`[data-bank="${bk.bid}"]`);const snap=[...bk.cards];const pid=c.pid;toss(el,()=>{delB(bk.n);sUndo({id:Date.now(),title:"Bank o'chirildi",note:`${bk.n} · ${snap.length} karta`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,...snap]}:x))});});}}><div data-row data-bank={bk.bid} className="ho" onClick={()=>push({v:"c",pid:c.pid,bn:bk.n})} style={{ ...glass(th,0.04),borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:13 }}>
+          <div key={bk.bid} data-item><SwipeRow label="Bank" onDelete={()=>{const el=document.querySelector(`[data-bank="${bk.bid}"]`);const snap=[...bk.cards];const pid=c.pid;toss(el,()=>{delB(bk.n);sUndo({id:Date.now(),title:"Bank o'chirildi",note:`${bk.n} · ${snap.length} karta`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...(x.cards||[]),...snap]}:x))});});}}><div data-row data-bank={bk.bid} className="ho" onClick={()=>push({v:"c",pid:c.pid,bn:bk.n})} style={{ ...glass(th,0.04),borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:13 }}>
             <Ava bid={bk.bid} n={42}/>
             <div style={{ flex:1 }}>
               <p style={{ fontWeight:600,fontSize:13,letterSpacing:"-0.01em" }}>{bk.n}</p>
@@ -5119,7 +5125,7 @@ const CardsPage=()=>{
       </div>}
       {c.v==="c"&&<div style={{ display:"flex",flexDirection:"column",gap:7 }}>
         {bc.map(card=>{
-          const last4 = card.num?.replace(/\s/g,"").slice(-4)||"????";
+          const t4 = last4(card.num) || "????";
           const H = cardHealth(card);
           const M = HEALTH_META(th)[H.state];
           const dead = H.state==="limit" || H.state==="expired";
@@ -5127,7 +5133,7 @@ const CardsPage=()=>{
           if (dead && fresh0) seenLimit.add(card.id);
           const slam = dead && fresh0;
           return (
-          <div key={card.id} data-item><SwipeRow label="Karta" onDelete={()=>{const el=document.querySelector(`[data-card="${card.id}"]`);const snap={...card};const pid=c.pid;toss(el,()=>{delC(card.id);sUndo({id:Date.now(),title:"Karta o'chirildi",note:`•••• ${last4}`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,snap]}:x))});});}}><CardFlip card={card}><div data-row data-card={card.id}
+          <div key={card.id} data-item><SwipeRow label="Karta" onDelete={()=>{const el=document.querySelector(`[data-card="${card.id}"]`);const snap={...card};const pid=c.pid;toss(el,()=>{delC(card.id);sUndo({id:Date.now(),title:"Karta o'chirildi",note:`•••• ${t4}`,restore:()=>sP(l=>l.map(x=>x.id===pid?{...x,cards:[...x.cards,snap]}:x))});});}}><CardFlip card={card}><div data-row data-card={card.id}
             className={`${fresh===card.id?"land ":""}${slam?"jolt ":""}`}
             style={{ ...glass(th,0.04),borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",gap:11,position:"relative",overflow:"hidden",transformStyle:"preserve-3d" }}>
 
@@ -5144,7 +5150,7 @@ const CardsPage=()=>{
             </span>
 
             <div style={{ flex:1,minWidth:0, opacity: dead?.55:1, transition:"opacity .4s" }}>
-              <p style={{ fontFamily:"monospace",fontSize:13,fontWeight:700,letterSpacing:"0.5px" }}>•••• {last4}</p>
+              <p style={{ fontFamily:"monospace",fontSize:13,fontWeight:700,letterSpacing:"0.5px" }}>•••• {t4}</p>
               <p style={{ fontSize:11,color:th.t3,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{card.name}</p>
               <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:6 }}>
                 <Pips used={H.used} cap={H.cap} tone={M.tone} dead={dead}/>
@@ -5407,7 +5413,14 @@ const PullRefresh = ({ onRefresh, children }) => {
   const startY = useRef(0);
   const armed  = useRef(false);
   const box    = useRef(null);
+  const timers = useRef([]);
   const TH = 74, MAX = 122;
+
+  // Listenerlar faqat bir marta ulanadi — aks holda har bir
+  // touchmove'da qayta ulanib, tortish jarayoni uzilib qolardi.
+  // Shuning uchun eng so'nggi qiymatlar ref orqali o'qiлади.
+  const live = useRef({ pull:0, state:"idle", onRefresh });
+  useEffect(()=>{ live.current = { pull, state, onRefresh }; });
 
   useEffect(()=>{
     const el = box.current;
@@ -5415,7 +5428,7 @@ const PullRefresh = ({ onRefresh, children }) => {
     const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
 
     const onStart = e => {
-      if (!atTop() || state==="load" || state==="done") return;
+      if (!atTop() || live.current.state==="load" || live.current.state==="done") return;
       startY.current = e.touches[0].clientY;
       armed.current  = true;
     };
@@ -5426,7 +5439,7 @@ const PullRefresh = ({ onRefresh, children }) => {
       if (!atTop()) { armed.current = false; sPull(0); return; }
       e.preventDefault();
       const p = Math.min(MAX, Math.pow(d,.82)*1.25);
-      const wasReady = state==="ready";
+      const wasReady = live.current.state==="ready";
       sPull(p);
       const nowReady = p >= TH;
       if (nowReady && !wasReady) { hap.press(); }
@@ -5435,10 +5448,10 @@ const PullRefresh = ({ onRefresh, children }) => {
     const onEnd = () => {
       if (!armed.current) return;
       armed.current = false;
-      if (pull >= TH) {
+      if (live.current.pull >= TH) {
         sPull(0); sState("load"); hap.soft();
-        setTimeout(()=>{ onRefresh?.(); sState("done"); hap.ok(); }, 900);
-        setTimeout(()=>sState("idle"), 1450);
+        timers.current.push(setTimeout(()=>{ live.current.onRefresh?.(); sState("done"); hap.ok(); }, 900));
+        timers.current.push(setTimeout(()=>sState("idle"), 1450));
       } else { sPull(0); sState("idle"); }
     };
 
@@ -5451,8 +5464,10 @@ const PullRefresh = ({ onRefresh, children }) => {
       el.removeEventListener("touchmove",  onMove);
       el.removeEventListener("touchend",   onEnd);
       el.removeEventListener("touchcancel",onEnd);
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
     };
-  }, [pull, state, onRefresh]);
+  }, []);
 
   const prog  = Math.min(1, pull / TH);
   const ready = state==="ready";
@@ -5950,7 +5965,6 @@ export default function App() {
   const [pin, setPin] = useState(null);
   const [ready, setReady] = useState(false);
   const [dir, setDir] = useState(0);              // sahifa yo'nalishi
-  const [tick, setTick] = useState(0);
 
   // ── umumiy ma'lumot ──
   const [account, setAccount] = useState("");
@@ -6005,7 +6019,9 @@ export default function App() {
   // Telegram oynasini to'liq ochish
   useEffect(()=>{ try { window.Telegram?.WebApp?.expand?.(); window.Telegram?.WebApp?.ready?.(); } catch {} },[]);
 
-  const [bootErr, setBootErr] = useState(null);
+  const bootWarned = useRef(false);
+  // sozlamadagi haptik bayrog'i har o'zgarishda ham global o'zgaruvchiga yozilishi kerak
+  useEffect(()=>{ setHaptic(cfg.haptic !== false); }, [cfg.haptic]);
 
   // ── saqlangan holatni yuklash + serverga "salom" ──
   // DIQQAT: window.storage FAQAT Claude'ning ichki muhitida ishlaydi —
@@ -6015,7 +6031,16 @@ export default function App() {
     (async()=>{
       try {
         await api.post("/auth/verify", {}).catch(e=>{
-          if (e.code === "NETWORK") setBootErr(e);
+          if (bootWarned.current) return;
+          bootWarned.current = true;
+          if (e.code === "NETWORK" || e.code === "TIMEOUT") {
+            setTimeout(()=>pushToast({ kind:"warn", title:"Server bilan aloqa yo'q",
+              note:"Ma'lumotlar vaqtinchalik saqlanadi", ms:3400 }), 900);
+          } else if (e.status === 401 || e.status === 403) {
+            // Telegram ichida ochilishi kerak — brauzerda initData bo'lmaydi
+            setTimeout(()=>pushToast({ kind:"err", title:"Telegram orqali kiring",
+              note:"Ilova Telegram ichida ochilishi kerak", ms:4200 }), 900);
+          }
         });
         const raw = localStorage.getItem("premolux_v1");
         const d = raw ? JSON.parse(raw) : null;
@@ -6061,19 +6086,30 @@ export default function App() {
       } catch {}
     }, 350);
     return ()=>clearTimeout(t);
-  }, [ready, account, bots, people, cfg, role, partners, workers, themeId, pin, codes]);
+  }, [ready, account, bots, people, cfg, role, partners, workers, themeId, pin, codes, hist]);
 
   // sahifa yo'nalishi: o'ngdagi tabga o'tsa chapdan sirg'aladi
   const ORDER = ["premium","bots","cards","team","stats","profile"];
   useEffect(()=>{
     if (role==="worker" && (page==="bots" || page==="team")) setPage("premium");
   }, [role]);
+  // pastga tortib yangilash — haqiqiy ma'lumotni qayta oladi
+  const refresh = async () => {
+    try {
+      const real = await api.get("/people");
+      if (Array.isArray(real)) setPeople(real);
+      pushToast({ kind:"ok", title:"Yangilandi", ms:1500 });
+    } catch (e) {
+      pushToast({ kind:"err", title:"Yangilanmadi", note:e.message, ms:2600 });
+    }
+  };
+
   const go = next => {
     if (next === page) return;
     setDir(ORDER.indexOf(next) > ORDER.indexOf(page) ? 1 : -1);
     setPage(next);
   };
-  const theme = themes[themeId];
+  const theme = themes[themeId] || themes.amoled;
 
   if (!ready) return (
     <ThemeCtx.Provider value={theme}>
@@ -6117,8 +6153,8 @@ export default function App() {
       <ToastHost list={toasts} onKill={killToast}/>
       <div className={cfg.calm ? "calm" : undefined} style={{ position:"relative", zIndex:1, minHeight:"100vh", paddingBottom:118 }}>
         <main className={entered ? "wake" : undefined} style={{ padding:"14px 18px 18px", maxWidth:720, margin:"0 auto" }}>
-          <PullRefresh onRefresh={()=>setTick(t=>t+1)}>
-            <div className={`${dir===0?"u":dir>0?"slideL":"slideR"} stg`} key={page+"-"+tick} style={{ paddingTop:12 }}>
+          <PullRefresh onRefresh={refresh}>
+            <div className={`${dir===0?"u":dir>0?"slideL":"slideR"} stg`} key={page} style={{ paddingTop:12 }}>
               {page==="premium" && <PremiumPage goto={setPage}/>}
               {page==="bots"    && <BotsPage/>}
               {page==="cards"   && <CardsPage/>}
