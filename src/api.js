@@ -70,7 +70,13 @@ export const request = async (path, { method="GET", body, timeout=25000 } = {}) 
     try { data = await res.json(); } catch (e) { logErr("clipboard/parse", e); }
 
     if (!res.ok) {
-      throw new ApiError(res.status, data?.code, data?.message || `Server xatosi (${res.status})`);
+      const err = new ApiError(res.status, data?.code, data?.message || `Server xatosi (${res.status})`);
+      // backend detail obyektini saqlab qolamiz (masalan sub_required uchun missing[])
+      if (data && typeof data === "object") {
+        err.detail = data;
+        if (Array.isArray(data.missing)) err.missing = data.missing;
+      }
+      throw err;
     }
     return data;
   } catch (e) {
@@ -86,6 +92,22 @@ export const api = {
   post: (p, b)   => request(p, { method:"POST",  body:b }),
   put:  (p, b)   => request(p, { method:"PUT",   body:b }),
   del:  (p)      => request(p, { method:"DELETE" }),
+  // Majburiy obuna tekshiruvi — backend Telegram'da
+  // foydalanuvchi kanal/guruhga a'zoligini tekshiradi.
+  // 428 + sub_required — hali a'zo emas (missing[] ro'yxati)
+  checkSub: async () => {
+    try {
+      await request("/auth/check-sub", { method:"POST", body:{} });
+      return { ok: true, missing: [] };
+    } catch (e) {
+      if (e.status === 428 && e.code === "sub_required") {
+        // ApiError xabari — backend detail.code ni qo'llab-quvvatlash uchun
+        const missing = e.missing || [];
+        return { ok: false, missing };
+      }
+      throw e;
+    }
+  },
 };
 
 // ═════════════════════════════════════════════════════════════

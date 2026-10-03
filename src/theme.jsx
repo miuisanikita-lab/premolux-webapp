@@ -89,6 +89,11 @@ export const themes = {
 
 // rasmiy kanal — Onboarding va yordam sahifalarida ishlatiladi
 export const CHANNEL = "@PremoLux";
+// majburiy obuna — kanal + guruh (Onboarding 1-bosqichi)
+export const REQUIRED_SUBS = [
+  { name: "@PremoLux",      kind: "channel" },
+  { name: "@Premolux_chat", kind: "group" },
+];
 
 export const ThemeCtx = createContext(themes.amoled);
 export const useTheme = () => useContext(ThemeCtx);

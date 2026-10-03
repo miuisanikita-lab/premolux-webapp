@@ -7,7 +7,7 @@ import {
 } from "./core";
 // xatolarni yig'ish — avval 20 ta `catch {}` xatoni jimgina yo'qotardi
 import { logErr, tryOr, errorLog } from "./logger";
-import { themes, ThemeCtx, useTheme, Css, glass, CHANNEL } from "./theme.jsx";
+import { themes, ThemeCtx, useTheme, Css, glass, CHANNEL, REQUIRED_SUBS } from "./theme.jsx";
 import { API_BASE, WS_BASE, MOCK, ApiError, api, hap, setHaptic, authHeader } from "./api";
 
 // ─────────────────────────────────────────────
@@ -5776,7 +5776,8 @@ const OnboardHead = ({ n, title, note, msg }) => {
 const Onboarding = ({ codes, onJoin }) => {
   const th = useTheme();
   const [step,sStep] = useState("channel");   // channel | pin | code | done
-  const [chk,sChk]   = useState("idle");      // idle | wait | ok
+  // har bir kanal/guruh uchun alohida holat: idle | wait | ok
+  const [chk,sChk]   = useState(() => REQUIRED_SUBS.map(() => "idle"));
   const [pin,sPin]   = useState("");
   const [first,sFirst]=useState("");
   const [rep,sRep]   = useState(false);
@@ -5784,6 +5785,7 @@ const Onboarding = ({ codes, onJoin }) => {
   const [msg,sMsg]   = useState("");
   const [bad,sBad]   = useState(false);
   const [seal,sSeal] = useState(false);
+  const [subErr,sSubErr] = useState("");
 
   // PIN klaviatura bilan ham kiritilishi kerak (avfaqat faqat touch ekranda
   // ishlardi — qattiqor telefon egalari uchun qulay emas edi)
@@ -5797,10 +5799,37 @@ const Onboarding = ({ codes, onJoin }) => {
     return ()=>window.removeEventListener("keydown", h);
   });
 
-  // ── 1. kanal ──
-  const check = () => {
-    sChk("wait"); hap.tap();
-    setTimeout(()=>{ sChk("ok"); hap.ok(); setTimeout(()=>sStep("pin"), 900); }, 1300);
+  // ── 1. kanal/guruh — HAQIQIY tekshiruv server orqali ──
+  // Backend Telegram'da foydalanuvchi a'zoligini tekshiradi
+  // (Telethon get_dialogs). Barcha kanal/guruhlarga a'zo
+  // bo'lgandagina PIN bosqichiga o'tiladi.
+  const check = async () => {
+    sChk(c => c.map(() => "wait"));
+    sSubErr("");
+    hap.tap();
+    try {
+      const res = await api.checkSub();
+      if (res.ok) {
+        sChk(c => c.map(() => "ok"));
+        hap.ok();
+        setTimeout(()=>sStep("pin"), 900);
+      } else {
+        // hali a'zo bo'lmaganlar bor — qaysilari ekanini ko'rsatamiz
+        const missing = (res.missing || []).map(m => m.replace(/^@/, "").toLowerCase());
+        sChk(c => REQUIRED_SUBS.map(s =>
+          missing.includes(s.name.replace(/^@/, "").toLowerCase()) ? "idle" : "ok"
+        ));
+        hap.err();
+        sSubErr(t("ob.stillMissing"));
+      }
+    } catch (e) {
+      // server ishlamayapti — foydalanuvchiga xabar, qayta urinish
+      sChk(c => c.map(() => "idle"));
+      hap.warn();
+      sSubErr(e.code === "NETWORK" || e.code === "TIMEOUT"
+        ? t("net.serverDown")
+        : (e.message || t("ob.checkFail")));
+    }
   };
 
   // ── 2. PIN ──
@@ -5848,29 +5877,43 @@ const Onboarding = ({ codes, onJoin }) => {
 
       <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", minHeight:0 }}>
 
-        {/* ── KANAL ── */}
+        {/* ── KANAL + GRUH ── */}
         {step==="channel" && (
           <div className="stepIn">
             <OnboardHead n={1} title={t("ob.title1")}
               note={t("ob.note1")}/>
 
-            <div style={{ ...glass(th,0.05), borderRadius:18, padding:"18px 16px", marginBottom:14 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:13 }}>
-                <span style={{ width:46, height:46, borderRadius:15, flexShrink:0,
-                  background:th.accSub, border:`1px solid ${th.accBd}`,
-                  display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={th.acc}
-                    strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 3L10.5 13.5M21 3l-6.5 18-4-8-8-4z"/>
-                  </svg>
-                </span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:15, fontWeight:700, letterSpacing:"-0.01em" }}>{CHANNEL}</p>
-                  <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>{t("ob.official")}</p>
+            {REQUIRED_SUBS.map((sub, i) => (
+              <div key={sub.name} style={{ ...glass(th,0.05), borderRadius:18, padding:"18px 16px", marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:13 }}>
+                  <span style={{ width:46, height:46, borderRadius:15, flexShrink:0,
+                    background:th.accSub, border:`1px solid ${th.accBd}`,
+                    display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {sub.kind === "group" ? (
+                      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={th.acc}
+                        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                      </svg>
+                    ) : (
+                      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={th.acc}
+                        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 3L10.5 13.5M21 3l-6.5 18-4-8-8-4z"/>
+                      </svg>
+                    )}
+                  </span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:15, fontWeight:700, letterSpacing:"-0.01em" }}>{sub.name}</p>
+                    <p style={{ fontSize:12, color:th.t3, marginTop:2 }}>
+                      {sub.kind === "group" ? t("ob.officialGroup") : t("ob.official")}
+                    </p>
+                  </div>
+                  {chk[i]==="ok" && <span className="tick2"><Ic.Check s={20} c={th.ok}/></span>}
                 </div>
-                {chk==="ok" && <span className="tick2"><Ic.Check s={20} c={th.ok}/></span>}
               </div>
-            </div>
+            ))}
 
             <a href={`https://t.me/${CHANNEL.replace("@","")}`} target="_blank" rel="noreferrer"
               className="linkBtn" style={{
@@ -5880,10 +5923,21 @@ const Onboarding = ({ codes, onJoin }) => {
             }}>
               {t("ob.openChannel")}
             </a>
-            <Btn full sz="lg" onClick={check} disabled={chk!=="idle"}>
-              {chk==="wait" ? <><Ic.Spin s={14} c={th.accTxt}/>{t("ob.checking")}</>
-               : chk==="ok" ? <><Ic.Check s={14} c={th.accTxt}/>{t("ob.confirmed")}</>
-               : t("ob.subscribed")}
+            <a href={`https://t.me/${REQUIRED_SUBS[1].name.replace("@","")}`} target="_blank" rel="noreferrer"
+              className="linkBtn" style={{
+              padding:"12px 22px", fontSize:14, borderRadius:11,
+              background:th.s2, border:`1px solid ${th.b1}`, color:th.t1,
+              fontWeight:700, textDecoration:"none", display:"flex", width:"100%", marginBottom:9,
+            }}>
+              {t("ob.openGroup")}
+            </a>
+            {subErr ? (
+              <p style={{ textAlign:"center", fontSize:12.5, color:th.err, marginBottom:9, lineHeight:1.5 }}>{subErr}</p>
+            ) : null}
+            <Btn full sz="lg" onClick={check} disabled={chk.some(c=>c==="wait")}>
+              {chk.some(c=>c==="wait") ? <><Ic.Spin s={14} c={th.accTxt}/>{t("ob.checking")}</>
+               : chk.every(c=>c==="ok") ? <><Ic.Check s={14} c={th.accTxt}/>{t("ob.confirmed")}</>
+                : t("ob.subscribed")}
             </Btn>
           </div>
         )}
